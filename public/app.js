@@ -2,6 +2,29 @@ const listEl = document.getElementById('gameList');
 const searchInput = document.getElementById('searchInput');
 const tabButtons = Array.from(document.querySelectorAll('.tab'));
 const navButtons = Array.from(document.querySelectorAll('.bottom-nav .nav-item'));
+const menuBtn = document.querySelector('.menu-btn');
+const menuPanel = document.getElementById('menuPanel');
+const menuItems = Array.from(
+  document.querySelectorAll('.menu-item:not(.menu-toggle), .menu-sub-item')
+);
+const menuGroup = document.querySelector('.menu-group');
+const menuToggle = document.querySelector('.menu-toggle');
+const checkinTrigger = document.querySelector('[data-action="checkin"]');
+const checkinView = document.getElementById('checkinView');
+const checkinGrid = document.getElementById('checkinGrid');
+const checkinMonth = document.getElementById('checkinMonth');
+const checkinClose = document.querySelector('.checkin-close');
+const checkinMonthBtn = document.querySelector('.checkin-month-btn');
+const checkinPicker = document.getElementById('checkinPicker');
+const checkinPickerGrid = document.getElementById('checkinPickerGrid');
+const checkinNavButtons = Array.from(document.querySelectorAll('[data-checkin-nav]'));
+
+const CHECKIN_YEAR_RANGE = 3;
+const checkinBaseYear = new Date().getFullYear();
+const checkinMinYear = checkinBaseYear - CHECKIN_YEAR_RANGE;
+const checkinMaxYear = checkinBaseYear + CHECKIN_YEAR_RANGE;
+let checkinDate = new Date(checkinBaseYear, new Date().getMonth(), 1);
+let checkinPickerBuilt = false;
 
 let games = [];
 let activeTab = 'home';
@@ -22,6 +45,158 @@ document.body.appendChild(modalBackdrop);
 const modalTitle = modalBackdrop.querySelector('.modal-title');
 const modalBody = modalBackdrop.querySelector('.modal-body');
 const modalClose = modalBackdrop.querySelector('.modal-close');
+
+function openMenu() {
+  if (!menuPanel || !menuBtn) return;
+  menuPanel.classList.add('open');
+  menuPanel.setAttribute('aria-hidden', 'false');
+  menuBtn.setAttribute('aria-expanded', 'true');
+}
+
+function closeMenu() {
+  if (!menuPanel || !menuBtn) return;
+  menuPanel.classList.remove('open');
+  menuPanel.setAttribute('aria-hidden', 'true');
+  menuBtn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMenu() {
+  if (!menuPanel) return;
+  if (menuPanel.classList.contains('open')) {
+    closeMenu();
+  } else {
+    openMenu();
+  }
+}
+
+function buildCheckinCalendar(baseDate = new Date()) {
+  if (!checkinGrid || !checkinMonth) return;
+  const year = baseDate.getFullYear();
+  const month = baseDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDate = new Date(year, month + 1, 0).getDate();
+  const startOffset = (firstDay.getDay() + 6) % 7; // Monday = 0
+  const today = new Date();
+
+  checkinMonth.textContent = `${String(month + 1).padStart(2, '0')}/${year}`;
+  checkinGrid.innerHTML = '';
+
+  for (let i = 0; i < startOffset; i += 1) {
+    const empty = document.createElement('div');
+    empty.className = 'checkin-empty';
+    checkinGrid.appendChild(empty);
+  }
+
+  for (let day = 1; day <= lastDate; day += 1) {
+    const cell = document.createElement('div');
+    cell.className = 'checkin-day';
+    cell.textContent = day;
+    if (
+      day === today.getDate() &&
+      month === today.getMonth() &&
+      year === today.getFullYear()
+    ) {
+      cell.classList.add('is-today');
+    }
+    checkinGrid.appendChild(cell);
+  }
+}
+
+function updateCheckinNav() {
+  const year = checkinDate.getFullYear();
+  const month = checkinDate.getMonth();
+  const canPrev = year > checkinMinYear || (year === checkinMinYear && month > 0);
+  const canNext = year < checkinMaxYear || (year === checkinMaxYear && month < 11);
+  checkinNavButtons.forEach((btn) => {
+    const dir = Number(btn.dataset.checkinNav || 0);
+    if (dir < 0) {
+      btn.disabled = !canPrev;
+    } else if (dir > 0) {
+      btn.disabled = !canNext;
+    }
+  });
+}
+
+function buildCheckinPicker() {
+  if (!checkinPickerGrid) return;
+  checkinPickerGrid.innerHTML = '';
+  const fragment = document.createDocumentFragment();
+  for (let year = checkinMinYear; year <= checkinMaxYear; year += 1) {
+    const yearLabel = document.createElement('div');
+    yearLabel.className = 'checkin-year';
+    yearLabel.textContent = String(year);
+    fragment.appendChild(yearLabel);
+
+    const monthWrap = document.createElement('div');
+    monthWrap.className = 'checkin-months';
+    for (let month = 0; month < 12; month += 1) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'checkin-month';
+      btn.dataset.year = String(year);
+      btn.dataset.month = String(month);
+      btn.textContent = `T${month + 1}`;
+      monthWrap.appendChild(btn);
+    }
+    fragment.appendChild(monthWrap);
+  }
+  checkinPickerGrid.appendChild(fragment);
+  updateCheckinPickerActive();
+}
+
+function updateCheckinPickerActive() {
+  if (!checkinPickerGrid) return;
+  const activeYear = checkinDate.getFullYear();
+  const activeMonth = checkinDate.getMonth();
+  const buttons = checkinPickerGrid.querySelectorAll('.checkin-month');
+  buttons.forEach((btn) => {
+    const year = Number(btn.dataset.year);
+    const month = Number(btn.dataset.month);
+    btn.classList.toggle('is-active', year === activeYear && month === activeMonth);
+  });
+}
+
+function setCheckinMonth(year, month) {
+  const normalized = new Date(year, month, 1);
+  const normalizedYear = normalized.getFullYear();
+  if (normalizedYear < checkinMinYear || normalizedYear > checkinMaxYear) return;
+  checkinDate = normalized;
+  buildCheckinCalendar(checkinDate);
+  updateCheckinNav();
+  updateCheckinPickerActive();
+}
+
+function toggleCheckinPicker() {
+  if (!checkinPicker || !checkinMonthBtn) return;
+  const isOpen = checkinPicker.classList.toggle('open');
+  checkinPicker.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  checkinMonthBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+function closeCheckinPicker() {
+  if (!checkinPicker || !checkinMonthBtn) return;
+  checkinPicker.classList.remove('open');
+  checkinPicker.setAttribute('aria-hidden', 'true');
+  checkinMonthBtn.setAttribute('aria-expanded', 'false');
+}
+
+function openCheckin() {
+  if (!checkinView) return;
+  if (!checkinPickerBuilt) {
+    buildCheckinPicker();
+    checkinPickerBuilt = true;
+  }
+  setCheckinMonth(checkinDate.getFullYear(), checkinDate.getMonth());
+  document.body.classList.add('checkin-open');
+  checkinView.setAttribute('aria-hidden', 'false');
+}
+
+function closeCheckin() {
+  if (!checkinView) return;
+  document.body.classList.remove('checkin-open');
+  checkinView.setAttribute('aria-hidden', 'true');
+  closeCheckinPicker();
+}
 
 function openModal(title, description) {
   modalTitle.textContent = title || 'Mô tả';
@@ -473,6 +648,71 @@ navButtons.forEach((btn) => {
     }
   });
 });
+if (menuBtn && menuPanel) {
+  menuBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleMenu();
+  });
+  if (menuGroup && menuToggle) {
+    menuToggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = menuGroup.classList.toggle('open');
+      menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+  }
+  document.addEventListener('click', (event) => {
+    if (!menuPanel.contains(event.target) && !menuBtn.contains(event.target)) {
+      closeMenu();
+    }
+  });
+  menuItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      closeMenu();
+    });
+  });
+}
+if (checkinTrigger) {
+  checkinTrigger.addEventListener('click', () => {
+    openCheckin();
+  });
+}
+if (checkinClose) {
+  checkinClose.addEventListener('click', () => {
+    closeCheckin();
+  });
+}
+if (checkinMonthBtn && checkinPicker) {
+  checkinMonthBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleCheckinPicker();
+  });
+}
+if (checkinPickerGrid) {
+  checkinPickerGrid.addEventListener('click', (event) => {
+    const target = event.target.closest('.checkin-month');
+    if (!target) return;
+    const year = Number(target.dataset.year);
+    const month = Number(target.dataset.month);
+    if (Number.isNaN(year) || Number.isNaN(month)) return;
+    setCheckinMonth(year, month);
+    closeCheckinPicker();
+  });
+}
+checkinNavButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const dir = Number(btn.dataset.checkinNav || 0);
+    if (!dir) return;
+    const year = checkinDate.getFullYear();
+    const month = checkinDate.getMonth() + dir;
+    setCheckinMonth(year, month);
+  });
+});
+document.addEventListener('click', (event) => {
+  if (!checkinPicker || !checkinMonthBtn) return;
+  if (!checkinPicker.classList.contains('open')) return;
+  if (checkinPicker.contains(event.target) || checkinMonthBtn.contains(event.target)) return;
+  closeCheckinPicker();
+});
 modalClose.addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', (event) => {
   if (event.target === modalBackdrop) {
@@ -482,6 +722,8 @@ modalBackdrop.addEventListener('click', (event) => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     closeModal();
+    closeMenu();
+    closeCheckin();
   }
 });
 loadGames();
