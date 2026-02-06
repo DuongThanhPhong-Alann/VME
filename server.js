@@ -13,6 +13,8 @@ const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'dlmau.xlsx');
 const HOT_CSV = process.env.HOT_CSV || '';
 const H5_CSV = process.env.H5_CSV || '';
 const RANK_CSV = process.env.RANK_CSV || '';
+const AGENT_CSV = process.env.AGENT_CSV || '';
+const STORE_CSV = process.env.STORE_CSV || '';
 const MEDIA_DIR = process.env.MEDIA_DIR || __dirname;
 
 const ALLOWED_MEDIA_ROOTS = [MEDIA_DIR]
@@ -128,6 +130,9 @@ function mapRowToGame(row, index, forcedType) {
   const description = pickValue(normalized, [
     'mo ta',
     'mota',
+    'thong tin',
+    'thongtin',
+    'info',
     'desc',
     'description',
     'gioi thieu',
@@ -137,6 +142,7 @@ function mapRowToGame(row, index, forcedType) {
   ]);
   const subtitle = pickValue(normalized, ['tom tat', 'summary', 'phu luc']);
   const views = pickValue(normalized, ['luot xem', 'luotxem', 'views', 'view', 'count', 'players']);
+  const money = pickValue(normalized, ['money', 'tien', 'so tien', 'sotien', 'amount', 'gia tri', 'giatri', 'value']);
   const platform = pickValue(normalized, ['nen tang', 'nentang', 'platform', 'he dieu hanh', 'device']);
   const tag = pickValue(normalized, ['tag', 'nhan', 'badge', 'hot', 'label']);
   const ctaLink = pickValue(normalized, ['link', 'url', 'href', 'website']) || '#';
@@ -165,6 +171,7 @@ function mapRowToGame(row, index, forcedType) {
     description,
     subtitle,
     views,
+    money,
     platform,
     tag,
     ctaText,
@@ -220,24 +227,37 @@ function findFirstExisting(paths) {
 }
 
 const HOT_CSV_PATH =
-  HOT_CSV ||
+  (HOT_CSV ? normalizeFsPath(HOT_CSV) : '') ||
   findFirstExisting([
     path.join(__dirname, 'dlmau - Trang tính1 (1).csv'),
     path.join(__dirname, 'dlmau - Trang tính1.csv'),
   ]);
 
 const H5_CSV_PATH =
-  H5_CSV ||
+  (H5_CSV ? normalizeFsPath(H5_CSV) : '') ||
   findFirstExisting([
     path.join(__dirname, 'dlmau - Trang tính2 (1).csv'),
     path.join(__dirname, 'dlmau - Trang tính2.csv'),
   ]);
 
 const RANK_CSV_PATH =
-  RANK_CSV ||
+  (RANK_CSV ? normalizeFsPath(RANK_CSV) : '') ||
   findFirstExisting([
+    path.join(__dirname, 'hang - hang.csv'),
     path.join(__dirname, 'dlmau - Trang tính3 (1).csv'),
     path.join(__dirname, 'dlmau - Trang tính3.csv'),
+  ]);
+
+const AGENT_CSV_PATH =
+  (AGENT_CSV ? normalizeFsPath(AGENT_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'hang - daily.csv'),
+  ]);
+
+const STORE_CSV_PATH =
+  (STORE_CSV ? normalizeFsPath(STORE_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'hang - CUAHANG.csv'),
   ]);
 
 function readGamesFromSources() {
@@ -258,7 +278,7 @@ function readGamesFromSources() {
 }
 
 function computeCacheKey() {
-  const files = [HOT_CSV_PATH, H5_CSV_PATH, RANK_CSV_PATH].filter(Boolean);
+  const files = [HOT_CSV_PATH, H5_CSV_PATH, RANK_CSV_PATH, AGENT_CSV_PATH, STORE_CSV_PATH].filter(Boolean);
   const parts = [];
   for (const file of files) {
     try {
@@ -276,6 +296,8 @@ function computeCacheKey() {
 }
 
 let cache = { key: '', games: [] };
+let agentCache = { key: '', agents: [] };
+let storeCache = { key: '', items: [] };
 
 function getGames() {
   try {
@@ -291,6 +313,90 @@ function getGames() {
   return cache.games;
 }
 
+function mapRowToAgent(row, index) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(row)) {
+    normalized[normalizeKey(key)] = value;
+  }
+  const name =
+    pickValue(normalized, ['ten', 'tendaily', 'tendl', 'tendai ly', 'ten dai ly', 'name', 'ten dl']) ||
+    pickValue(normalized, ['tengame', 'ten game', 'title']) ||
+    `Đại lý ${index + 1}`;
+  const imageRaw = pickValue(normalized, ['anh', 'avatar', 'image', 'img', 'logo', 'icon']);
+  const info = pickValue(normalized, [
+    'thong tin',
+    'thongtin',
+    'mo ta',
+    'mota',
+    'description',
+    'desc',
+    'gioi thieu',
+    'note',
+  ]);
+  return {
+    name,
+    image: imageRaw ? toMediaUrl(imageRaw) : '/placeholder.svg',
+    info,
+  };
+}
+
+function readAgentsFromSources() {
+  const rows = readRowsFromFile(AGENT_CSV_PATH);
+  return rows.map((row, index) => mapRowToAgent(row, index)).filter((agent) => agent && agent.name);
+}
+
+function getAgents() {
+  try {
+    const key = computeCacheKey();
+    if (key && key !== agentCache.key) {
+      agentCache = { key, agents: readAgentsFromSources() };
+    } else if (!key) {
+      agentCache = { key: '', agents: [] };
+    }
+  } catch (err) {
+    return [];
+  }
+  return agentCache.agents;
+}
+
+function mapRowToStoreItem(row, index) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(row)) {
+    normalized[normalizeKey(key)] = value;
+  }
+  const name =
+    pickValue(normalized, ['ten', 'name', 'item', 'ten vat pham', 'ten vatpham', 'vat pham']) ||
+    `Vật phẩm ${index + 1}`;
+  const imageRaw = pickValue(normalized, ['anh', 'image', 'img', 'avatar', 'logo', 'icon']);
+  const price = pickValue(normalized, ['gia', 'price', 'coin', 'tien']);
+  return {
+    name,
+    image: imageRaw ? toMediaUrl(imageRaw) : '/placeholder.svg',
+    price,
+  };
+}
+
+function readStoreFromSources() {
+  const rows = readRowsFromFile(STORE_CSV_PATH);
+  return rows
+    .map((row, index) => mapRowToStoreItem(row, index))
+    .filter((item) => item && item.name);
+}
+
+function getStoreItems() {
+  try {
+    const key = computeCacheKey();
+    if (key && key !== storeCache.key) {
+      storeCache = { key, items: readStoreFromSources() };
+    } else if (!key) {
+      storeCache = { key: '', items: [] };
+    }
+  } catch (err) {
+    return [];
+  }
+  return storeCache.items;
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/games', (req, res) => {
@@ -299,6 +405,24 @@ app.get('/api/games', (req, res) => {
     updatedAt: new Date().toISOString(),
     total: games.length,
     games,
+  });
+});
+
+app.get('/api/agents', (req, res) => {
+  const agents = getAgents();
+  res.json({
+    updatedAt: new Date().toISOString(),
+    total: agents.length,
+    agents,
+  });
+});
+
+app.get('/api/store', (req, res) => {
+  const items = getStoreItems();
+  res.json({
+    updatedAt: new Date().toISOString(),
+    total: items.length,
+    items,
   });
 });
 

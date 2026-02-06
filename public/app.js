@@ -19,6 +19,12 @@ const checkinPicker = document.getElementById('checkinPicker');
 const checkinPickerGrid = document.getElementById('checkinPickerGrid');
 const checkinNavButtons = Array.from(document.querySelectorAll('[data-checkin-nav]'));
 const checkinHomeButton = document.querySelector('[data-checkin-home]');
+const agentView = document.getElementById('agentView');
+const agentListEl = document.getElementById('agentList');
+const agentHomeButton = document.querySelector('[data-agent-home]');
+const storeView = document.getElementById('storeView');
+const storeGridEl = document.getElementById('storeGrid');
+const storeHomeButton = document.querySelector('[data-store-home]');
 
 const CHECKIN_YEAR_RANGE = 3;
 const checkinBaseYear = new Date().getFullYear();
@@ -29,6 +35,10 @@ let checkinPickerBuilt = false;
 
 let games = [];
 let activeTab = 'home';
+let agents = [];
+let agentsLoaded = false;
+let storeItems = [];
+let storeLoaded = false;
 
 const modalBackdrop = document.createElement('div');
 modalBackdrop.className = 'modal-backdrop';
@@ -199,6 +209,175 @@ function closeCheckin() {
   closeCheckinPicker();
 }
 
+function openAgents() {
+  if (!agentView) return;
+  closeModal();
+  closeMenu();
+  closeCheckin();
+  document.body.classList.add('agent-open');
+  agentView.setAttribute('aria-hidden', 'false');
+}
+
+function closeAgents() {
+  if (!agentView) return;
+  document.body.classList.remove('agent-open');
+  agentView.setAttribute('aria-hidden', 'true');
+}
+
+function openStore() {
+  if (!storeView) return;
+  closeModal();
+  closeMenu();
+  closeCheckin();
+  closeAgents();
+  document.body.classList.add('store-open');
+  storeView.setAttribute('aria-hidden', 'false');
+}
+
+function closeStore() {
+  if (!storeView) return;
+  document.body.classList.remove('store-open');
+  storeView.setAttribute('aria-hidden', 'true');
+}
+
+function renderStore() {
+  if (!storeGridEl) return;
+  storeGridEl.innerHTML = '';
+
+  if (!storeItems.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Chưa có dữ liệu cửa hàng.';
+    storeGridEl.appendChild(empty);
+    return;
+  }
+
+  storeItems.forEach((item) => {
+    const card = document.createElement('article');
+    card.className = 'store-item';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'store-thumb';
+    const img = document.createElement('img');
+    img.src = item.image || '/placeholder.svg';
+    img.alt = item.name || 'Vật phẩm';
+    img.addEventListener('error', () => {
+      if (img.src.includes('placeholder.svg')) return;
+      img.src = '/placeholder.svg';
+    });
+    thumb.appendChild(img);
+
+    const name = document.createElement('div');
+    name.className = 'store-name';
+    name.textContent = item.name || 'Vật phẩm';
+
+    const price = document.createElement('div');
+    price.className = 'store-price';
+    price.textContent = item.price || '';
+
+    card.appendChild(thumb);
+    card.appendChild(name);
+    if (item.price) card.appendChild(price);
+    storeGridEl.appendChild(card);
+  });
+}
+
+async function loadStore() {
+  if (storeLoaded) return;
+  storeLoaded = true;
+  if (!storeGridEl) return;
+  storeGridEl.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
+
+  try {
+    const response = await fetch('/api/store');
+    const data = await response.json();
+    storeItems = Array.isArray(data.items) ? data.items : [];
+    renderStore();
+  } catch (error) {
+    storeGridEl.innerHTML = '';
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Không tải được dữ liệu cửa hàng.';
+    storeGridEl.appendChild(empty);
+  }
+}
+
+function renderAgents() {
+  if (!agentListEl) return;
+  agentListEl.innerHTML = '';
+
+  if (!agents.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Chưa có đại lý.';
+    agentListEl.appendChild(empty);
+    return;
+  }
+
+  agents.forEach((agent, index) => {
+    const row = document.createElement('article');
+    row.className = 'game-row agent-row';
+    row.style.setProperty('--delay', `${index * 40}ms`);
+
+    const imageWrap = document.createElement('div');
+    imageWrap.className = 'game-image';
+
+    const img = document.createElement('img');
+    img.src = agent.image || '/placeholder.svg';
+    img.alt = agent.name || 'Đại lý';
+    img.addEventListener('error', () => {
+      if (img.src.includes('placeholder.svg')) return;
+      img.src = '/placeholder.svg';
+    });
+    imageWrap.appendChild(img);
+
+    const info = document.createElement('div');
+    info.className = 'game-info';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'game-title';
+
+    const title = document.createElement('h3');
+    title.textContent = agent.name || 'Đại lý';
+    title.style.margin = '0';
+    title.style.fontSize = '18px';
+    title.style.fontWeight = '700';
+    titleRow.appendChild(title);
+    info.appendChild(titleRow);
+
+    if (agent.info) {
+      const desc = document.createElement('div');
+      desc.className = 'agent-info';
+      desc.textContent = agent.info;
+      info.appendChild(desc);
+    }
+
+    row.appendChild(imageWrap);
+    row.appendChild(info);
+    agentListEl.appendChild(row);
+  });
+}
+
+async function loadAgents() {
+  if (agentsLoaded) return;
+  agentsLoaded = true;
+  if (!agentListEl) return;
+  agentListEl.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
+
+  try {
+    const response = await fetch('/api/agents');
+    const data = await response.json();
+    agents = Array.isArray(data.agents) ? data.agents : [];
+    renderAgents();
+  } catch (error) {
+    agentListEl.innerHTML = '';
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Không tải được dữ liệu đại lý.';
+    agentListEl.appendChild(empty);
+  }
+}
+
 function openModal(title, description) {
   modalTitle.textContent = title || 'Mô tả';
   modalBody.textContent = description || '';
@@ -219,6 +398,18 @@ function formatViews(value) {
   const numeric = Number(raw.replace(/[^0-9]/g, ''));
   if (!Number.isNaN(numeric) && numeric > 0) {
     return `${numeric.toLocaleString('vi-VN')} lượt xem`;
+  }
+  return raw;
+}
+
+function formatChipNumber(value) {
+  if (!value) return '';
+  const raw = String(value).trim();
+  if (!raw) return '';
+  if (/[a-zA-ZÀ-ỹ]/.test(raw)) return raw;
+  const numeric = Number(raw.replace(/[^0-9]/g, ''));
+  if (!Number.isNaN(numeric) && numeric > 0) {
+    return numeric.toLocaleString('vi-VN');
   }
   return raw;
 }
@@ -416,6 +607,15 @@ function createRankRow(game, index) {
   row.className = 'game-row rank-row';
   row.style.setProperty('--delay', `${index * 60}ms`);
 
+  const inferredRank = String(game.rank || '').trim() || String(index + 1);
+  const rankNum = Number(String(inferredRank).replace(/[^0-9]/g, '')) || index + 1;
+  if (rankNum <= 3) {
+    row.classList.add('rank-top', `rank-top-${rankNum}`);
+  }
+
+  const rankLeft = document.createElement('div');
+  rankLeft.className = 'rank-left';
+
   const imageWrap = document.createElement('div');
   imageWrap.className = 'game-image';
 
@@ -428,12 +628,12 @@ function createRankRow(game, index) {
   });
   imageWrap.appendChild(img);
 
-  if (game.rank) {
-    const rankBadge = document.createElement('div');
-    rankBadge.className = 'rank-badge';
-    rankBadge.textContent = String(game.rank).trim();
-    imageWrap.appendChild(rankBadge);
-  }
+  const rankPill = document.createElement('div');
+  rankPill.className = 'rank-pill';
+  rankPill.textContent = rankNum <= 3 ? `TOP ${rankNum}` : `#${inferredRank}`;
+
+  rankLeft.appendChild(imageWrap);
+  rankLeft.appendChild(rankPill);
 
   const info = document.createElement('div');
   info.className = 'game-info';
@@ -448,14 +648,14 @@ function createRankRow(game, index) {
   title.style.fontWeight = '600';
   titleRow.appendChild(title);
 
-  if (game.category) {
-    const badge = document.createElement('span');
-    badge.className = 'badge badge-h5';
-    badge.textContent = game.category;
-    titleRow.appendChild(badge);
-  }
-
   info.appendChild(titleRow);
+
+  if (game.description) {
+    const subtitle = document.createElement('div');
+    subtitle.className = 'game-subtitle';
+    subtitle.textContent = game.description;
+    info.appendChild(subtitle);
+  }
 
   const meta = document.createElement('div');
   meta.className = 'h5-meta h5-chips';
@@ -473,6 +673,7 @@ function createRankRow(game, index) {
   addChip(game.language);
   addChip(game.graphics);
   addChip(game.vote);
+  addChip(formatChipNumber(game.money));
 
   if (meta.children.length) {
     info.appendChild(meta);
@@ -510,7 +711,7 @@ function createRankRow(game, index) {
     cta.classList.add('disabled');
   }
 
-  row.appendChild(imageWrap);
+  row.appendChild(rankLeft);
   row.appendChild(info);
   row.appendChild(cta);
 
@@ -537,6 +738,8 @@ function goHome() {
   closeModal();
   closeMenu();
   closeCheckin();
+  closeAgents();
+  closeStore();
   setActiveNav('home');
   setActiveTab('home');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -546,6 +749,8 @@ function goRank() {
   closeModal();
   closeMenu();
   closeCheckin();
+  closeAgents();
+  closeStore();
   setActiveNav('rank');
   setActiveTab('rank');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -639,9 +844,25 @@ navButtons.forEach((btn) => {
       goRank();
       return;
     }
+    if (nav === 'agent') {
+      setActiveNav('agent');
+      openAgents();
+      loadAgents();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (nav === 'store') {
+      setActiveNav('store');
+      openStore();
+      loadStore();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     closeModal();
     closeMenu();
     closeCheckin();
+    closeAgents();
+    closeStore();
     setActiveNav(nav);
   });
 });
@@ -680,6 +901,16 @@ if (checkinClose) {
 }
 if (checkinHomeButton) {
   checkinHomeButton.addEventListener('click', () => {
+    goHome();
+  });
+}
+if (agentHomeButton) {
+  agentHomeButton.addEventListener('click', () => {
+    goHome();
+  });
+}
+if (storeHomeButton) {
+  storeHomeButton.addEventListener('click', () => {
     goHome();
   });
 }
@@ -726,6 +957,8 @@ document.addEventListener('keydown', (event) => {
     closeModal();
     closeMenu();
     closeCheckin();
+    closeAgents();
+    closeStore();
   }
 });
 loadGames();
