@@ -26,6 +26,68 @@ const storeView = document.getElementById('storeView');
 const storeGridEl = document.getElementById('storeGrid');
 const storeHomeButton = document.querySelector('[data-store-home]');
 
+const LAZY_DATA_URL_THRESHOLD = 20_000;
+let lazyImageObserver = null;
+
+function getLazyImageObserver() {
+  if (lazyImageObserver) return lazyImageObserver;
+  if (!('IntersectionObserver' in window)) return null;
+  lazyImageObserver = new IntersectionObserver(
+    (entries, observer) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        observer.unobserve(img);
+        const src = img.dataset.src;
+        if (!src) return;
+        img.classList.remove('is-loaded');
+        img.classList.add('is-loading');
+        img.src = src;
+        img.removeAttribute('data-src');
+      });
+    },
+    { rootMargin: '250px 0px' }
+  );
+  return lazyImageObserver;
+}
+
+function setupProgressiveImage(img, src, { alt, placeholder = '/placeholder.svg' } = {}) {
+  if (alt) img.alt = alt;
+  img.loading = 'lazy';
+  img.decoding = 'async';
+
+  img.classList.add('is-loading');
+  const markLoaded = () => {
+    img.classList.remove('is-loading');
+    img.classList.add('is-loaded');
+  };
+
+  img.addEventListener('load', markLoaded);
+  img.addEventListener('error', () => {
+    if (img.src && img.src.includes(placeholder)) {
+      markLoaded();
+      return;
+    }
+    img.src = placeholder;
+  });
+
+  const actualSrc = src || placeholder;
+  const shouldDefer =
+    typeof actualSrc === 'string' &&
+    actualSrc.startsWith('data:image') &&
+    actualSrc.length > LAZY_DATA_URL_THRESHOLD;
+
+  if (shouldDefer) {
+    img.dataset.src = actualSrc;
+    img.src = placeholder;
+    const observer = getLazyImageObserver();
+    if (observer) observer.observe(img);
+    return;
+  }
+
+  img.src = actualSrc;
+}
+
 const CHECKIN_YEAR_RANGE = 3;
 const checkinBaseYear = new Date().getFullYear();
 const checkinMinYear = checkinBaseYear - CHECKIN_YEAR_RANGE;
@@ -256,16 +318,11 @@ function renderStore() {
     const card = document.createElement('article');
     card.className = 'store-item';
 
-    const thumb = document.createElement('div');
-    thumb.className = 'store-thumb';
-    const img = document.createElement('img');
-    img.src = item.image || '/placeholder.svg';
-    img.alt = item.name || 'Vật phẩm';
-    img.addEventListener('error', () => {
-      if (img.src.includes('placeholder.svg')) return;
-      img.src = '/placeholder.svg';
-    });
-    thumb.appendChild(img);
+	    const thumb = document.createElement('div');
+	    thumb.className = 'store-thumb';
+	    const img = document.createElement('img');
+	    setupProgressiveImage(img, item.image, { alt: item.name || 'Vật phẩm' });
+	    thumb.appendChild(img);
 
     const name = document.createElement('div');
     name.className = 'store-name';
@@ -322,14 +379,9 @@ function renderAgents() {
     const imageWrap = document.createElement('div');
     imageWrap.className = 'game-image';
 
-    const img = document.createElement('img');
-    img.src = agent.image || '/placeholder.svg';
-    img.alt = agent.name || 'Đại lý';
-    img.addEventListener('error', () => {
-      if (img.src.includes('placeholder.svg')) return;
-      img.src = '/placeholder.svg';
-    });
-    imageWrap.appendChild(img);
+	    const img = document.createElement('img');
+	    setupProgressiveImage(img, agent.image, { alt: agent.name || 'Đại lý' });
+	    imageWrap.appendChild(img);
 
     const info = document.createElement('div');
     info.className = 'game-info';
@@ -445,12 +497,7 @@ function createRow(game, index) {
   imageWrap.className = 'game-image';
 
   const img = document.createElement('img');
-  img.src = game.image || '/placeholder.svg';
-  img.alt = game.title || 'Game';
-  img.addEventListener('error', () => {
-    if (img.src.includes('placeholder.svg')) return;
-    img.src = '/placeholder.svg';
-  });
+  setupProgressiveImage(img, game.image, { alt: game.title || 'Game' });
   imageWrap.appendChild(img);
 
   const info = document.createElement('div');
@@ -540,12 +587,7 @@ function createH5Row(game, index) {
   imageWrap.className = 'game-image';
 
   const img = document.createElement('img');
-  img.src = game.image || '/placeholder.svg';
-  img.alt = game.title || 'Game H5';
-  img.addEventListener('error', () => {
-    if (img.src.includes('placeholder.svg')) return;
-    img.src = '/placeholder.svg';
-  });
+  setupProgressiveImage(img, game.image, { alt: game.title || 'Game H5' });
   imageWrap.appendChild(img);
 
   const info = document.createElement('div');
@@ -616,17 +658,12 @@ function createRankRow(game, index) {
   const rankLeft = document.createElement('div');
   rankLeft.className = 'rank-left';
 
-  const imageWrap = document.createElement('div');
-  imageWrap.className = 'game-image';
+	  const imageWrap = document.createElement('div');
+	  imageWrap.className = 'game-image';
 
-  const img = document.createElement('img');
-  img.src = game.image || '/placeholder.svg';
-  img.alt = game.title || 'Rank Game';
-  img.addEventListener('error', () => {
-    if (img.src.includes('placeholder.svg')) return;
-    img.src = '/placeholder.svg';
-  });
-  imageWrap.appendChild(img);
+	  const img = document.createElement('img');
+	  setupProgressiveImage(img, game.image, { alt: game.title || 'Rank Game' });
+	  imageWrap.appendChild(img);
 
   const rankPill = document.createElement('div');
   rankPill.className = 'rank-pill';
