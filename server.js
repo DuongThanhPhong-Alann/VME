@@ -15,6 +15,8 @@ const H5_CSV = process.env.H5_CSV || '';
 const RANK_CSV = process.env.RANK_CSV || '';
 const AGENT_CSV = process.env.AGENT_CSV || '';
 const STORE_CSV = process.env.STORE_CSV || '';
+const PROFILE_CSV = process.env.PROFILE_CSV || '';
+const PROFILE_GAMES_CSV = process.env.PROFILE_GAMES_CSV || '';
 const MEDIA_DIR = process.env.MEDIA_DIR || __dirname;
 
 const ALLOWED_MEDIA_ROOTS = [MEDIA_DIR]
@@ -260,6 +262,20 @@ const STORE_CSV_PATH =
     path.join(__dirname, 'hang - CUAHANG.csv'),
   ]);
 
+const PROFILE_CSV_PATH =
+  (PROFILE_CSV ? normalizeFsPath(PROFILE_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'pro5_profile.csv'),
+    path.join(__dirname, 'profile.csv'),
+  ]);
+
+const PROFILE_GAMES_CSV_PATH =
+  (PROFILE_GAMES_CSV ? normalizeFsPath(PROFILE_GAMES_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'pro5_games.csv'),
+    path.join(__dirname, 'profile_games.csv'),
+  ]);
+
 function readGamesFromSources() {
   const games = [];
   const hotRows = readRowsFromFile(HOT_CSV_PATH);
@@ -278,7 +294,15 @@ function readGamesFromSources() {
 }
 
 function computeCacheKey() {
-  const files = [HOT_CSV_PATH, H5_CSV_PATH, RANK_CSV_PATH, AGENT_CSV_PATH, STORE_CSV_PATH].filter(Boolean);
+  const files = [
+    HOT_CSV_PATH,
+    H5_CSV_PATH,
+    RANK_CSV_PATH,
+    AGENT_CSV_PATH,
+    STORE_CSV_PATH,
+    PROFILE_CSV_PATH,
+    PROFILE_GAMES_CSV_PATH,
+  ].filter(Boolean);
   const parts = [];
   for (const file of files) {
     try {
@@ -298,6 +322,8 @@ function computeCacheKey() {
 let cache = { key: '', games: [] };
 let agentCache = { key: '', agents: [] };
 let storeCache = { key: '', items: [] };
+let profileCache = { key: '', profile: null };
+let playedGamesCache = { key: '', games: [] };
 
 function getGames() {
   try {
@@ -397,6 +423,143 @@ function getStoreItems() {
   return storeCache.items;
 }
 
+function mapRowToProfile(row) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(row || {})) {
+    normalized[normalizeKey(key)] = value;
+  }
+
+  const name = pickValue(normalized, ['ten', 'name', 'ten nhan vat', 'ten nhanvat']) || 'Anh Quân';
+  const username = pickValue(normalized, ['username', 'user', 'tai khoan', 'taikhoan', 'nick', 'nickname']) || '';
+  const uid = pickValue(normalized, ['id', 'uid', 'user id', 'userid']) || '';
+  const status = pickValue(normalized, ['status', 'trang thai', 'trangthai', 'xac thuc', 'xacthuc']) || '';
+  const vip = pickValue(normalized, ['vip', 'vip level', 'viplevel', 'vip_level']) || '';
+  const title = pickValue(normalized, ['danh hieu', 'danhhieu', 'title', 'biet danh', 'bietdanh']) || 'Danh hiệu';
+  const level = pickValue(normalized, ['level', 'lv', 'cap', 'cấp', 'rank']) || '';
+  const inviteCode = pickValue(normalized, ['ma moi', 'mamoi', 'invite', 'invite code', 'invite_code', 'code']) || '';
+  const avatarRaw = pickValue(normalized, ['avatar', 'anh', 'image', 'img', 'hinh', 'logo']);
+  const email = pickValue(normalized, ['email', 'mail']) || '';
+  const phone = pickValue(normalized, ['sdt', 'so dien thoai', 'số điện thoại', 'phone', 'tel']) || '';
+  const address = pickValue(normalized, ['dia chi', 'địa chỉ', 'address']) || '';
+  const balance = pickValue(normalized, ['so du', 'sodu', 'balance', 'coin', 'tien ngoc', 'tienngoc', 'ngoc']) || '10000';
+
+  return {
+    name,
+    username,
+    uid,
+    status,
+    vip,
+    title,
+    level,
+    inviteCode,
+    avatar: avatarRaw ? toMediaUrl(avatarRaw) : '',
+    email,
+    phone,
+    address,
+    balance,
+  };
+}
+
+function readProfileFromSources() {
+  const rows = readRowsFromFile(PROFILE_CSV_PATH);
+  const row = rows[0] || {};
+  const profile = mapRowToProfile(row);
+  if (!profile.avatar) {
+    profile.avatar = pickAnyExistingAvatar();
+  }
+  return profile;
+}
+
+function getProfile() {
+  try {
+    const key = computeCacheKey();
+    if (key && key !== profileCache.key) {
+      profileCache = { key, profile: readProfileFromSources() };
+    } else if (!key) {
+      profileCache = { key: '', profile: mapRowToProfile({}) };
+    }
+  } catch (err) {
+    return mapRowToProfile({});
+  }
+  return profileCache.profile || mapRowToProfile({});
+}
+
+function pickAnyExistingAvatar() {
+  const imageKeys = [
+    'anh',
+    'image',
+    'img',
+    'avatar',
+    'logo',
+    'icon',
+    'link anh',
+    'link image',
+    'game_image',
+    'game image',
+  ];
+
+  const extractFromRow = (row) => {
+    const normalized = {};
+    for (const [key, value] of Object.entries(row || {})) {
+      normalized[normalizeKey(key)] = value;
+    }
+    return pickValue(normalized, imageKeys);
+  };
+
+  const tryFiles = [STORE_CSV_PATH, HOT_CSV_PATH, H5_CSV_PATH, RANK_CSV_PATH, AGENT_CSV_PATH].filter(Boolean);
+  for (const file of tryFiles) {
+    try {
+      const rows = readRowsFromFile(file);
+      for (const row of rows) {
+        const img = extractFromRow(row);
+        if (img) return toMediaUrl(img);
+      }
+    } catch (err) {
+      continue;
+    }
+  }
+
+  return '/placeholder.svg';
+}
+
+function mapRowToPlayedGame(row, index) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(row || {})) {
+    normalized[normalizeKey(key)] = value;
+  }
+  const title = pickValue(normalized, ['ten game', 'tengame', 'name', 'title', 'game']) || `Game ${index + 1}`;
+  const imageRaw = pickValue(normalized, ['image', 'img', 'anh', 'avatar', 'logo', 'icon']);
+  const lastPlayed = pickValue(normalized, ['last_played', 'last played', 'lan cuoi', 'lancuoi', 'date', 'ngay']) || '';
+  const hours = pickValue(normalized, ['hours', 'gio choi', 'giochoi', 'time']) || '';
+  const level = pickValue(normalized, ['level', 'lv', 'cap', 'cấp']) || '';
+  return {
+    title,
+    image: imageRaw ? toMediaUrl(imageRaw) : '/placeholder.svg',
+    lastPlayed,
+    hours,
+    level,
+  };
+}
+
+function readPlayedGamesFromSources() {
+  const rows = readRowsFromFile(PROFILE_GAMES_CSV_PATH);
+  return rows.map((row, index) => mapRowToPlayedGame(row, index)).filter((game) => game && game.title);
+}
+
+function getPlayedGames() {
+  try {
+    const key = computeCacheKey();
+    if (key && key !== playedGamesCache.key) {
+      playedGamesCache = { key, games: readPlayedGamesFromSources() };
+    } else if (!key) {
+      playedGamesCache = { key: '', games: [] };
+    }
+  } catch (err) {
+    return [];
+  }
+  return playedGamesCache.games;
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/games', (req, res) => {
@@ -423,6 +586,23 @@ app.get('/api/store', (req, res) => {
     updatedAt: new Date().toISOString(),
     total: items.length,
     items,
+  });
+});
+
+app.get('/api/profile', (req, res) => {
+  const profile = getProfile();
+  res.json({
+    updatedAt: new Date().toISOString(),
+    profile,
+  });
+});
+
+app.get('/api/profile/games', (req, res) => {
+  const games = getPlayedGames();
+  res.json({
+    updatedAt: new Date().toISOString(),
+    total: games.length,
+    games,
   });
 });
 

@@ -25,9 +25,80 @@ const agentHomeButton = document.querySelector('[data-agent-home]');
 const storeView = document.getElementById('storeView');
 const storeGridEl = document.getElementById('storeGrid');
 const storeHomeButton = document.querySelector('[data-store-home]');
+const pro5Btn = document.getElementById('pro5Btn');
+const pro5NameEl = document.getElementById('pro5Name');
+const balanceValueEl = document.getElementById('balanceValue');
+const profileView = document.getElementById('profileView');
+const profileFrame = document.getElementById('profileFrame');
+const profileGamesGrid = document.getElementById('profileGamesGrid');
+const profileHomeButton = document.querySelector('[data-profile-home]');
+const profileCloseButton = document.querySelector('.profile-close');
+const khoButton = document.querySelector('[data-kho]');
+const inventoryView = document.getElementById('inventoryView');
+const inventoryTitleEl = document.querySelector('.inventory-title');
+const inventoryGrid = document.getElementById('inventoryGrid');
+const inventoryTabsWrap = document.querySelector('.inventory-tabs');
+const inventoryTabs = Array.from(document.querySelectorAll('.inventory-tab'));
+const inventoryCloseButton = document.querySelector('.inventory-close');
+const inventoryHomeButton = document.querySelector('[data-inventory-home]');
 
 const LAZY_DATA_URL_THRESHOLD = 20_000;
 let lazyImageObserver = null;
+
+const SEARCH_PLACEHOLDERS = {
+  home: 'Tìm game...',
+  rank: 'Tìm bảng xếp hạng...',
+  agent: 'Tìm đại lý...',
+  store: 'Tìm vật phẩm...',
+  profile: 'Tìm game đã chơi...',
+  inventory: 'Tìm trong kho...',
+  checkin: 'Nhập để tìm kiếm',
+};
+
+function getSearchTerm() {
+  return String(searchInput?.value || '').trim().toLowerCase();
+}
+
+function setSearchPlaceholder(context) {
+  if (!searchInput) return;
+  searchInput.placeholder = SEARCH_PLACEHOLDERS[context] || 'Nhập để tìm kiếm';
+}
+
+function clearSearch() {
+  if (!searchInput) return;
+  searchInput.value = '';
+}
+
+function getActiveContext() {
+  const body = document.body;
+  if (body.classList.contains('inventory-open')) return 'inventory';
+  if (body.classList.contains('profile-open')) return 'profile';
+  if (body.classList.contains('store-open')) return 'store';
+  if (body.classList.contains('agent-open')) return 'agent';
+  if (body.classList.contains('checkin-open')) return 'checkin';
+  return activeTab === 'rank' ? 'rank' : 'home';
+}
+
+function refreshActiveSearch() {
+  const context = getActiveContext();
+  if (context === 'inventory') {
+    renderInventory();
+    return;
+  }
+  if (context === 'profile') {
+    renderPlayedGames(profilePlayedGames);
+    return;
+  }
+  if (context === 'store') {
+    renderStore();
+    return;
+  }
+  if (context === 'agent') {
+    renderAgents();
+    return;
+  }
+  renderList();
+}
 
 function getLazyImageObserver() {
   if (lazyImageObserver) return lazyImageObserver;
@@ -128,6 +199,7 @@ let agents = [];
 let agentsLoaded = false;
 let storeItems = [];
 let storeLoaded = false;
+let profilePlayedGames = [];
 
 const modalBackdrop = document.createElement('div');
 modalBackdrop.className = 'modal-backdrop';
@@ -289,6 +361,8 @@ function openCheckin() {
   setCheckinMonth(checkinDate.getFullYear(), checkinDate.getMonth());
   document.body.classList.add('checkin-open');
   checkinView.setAttribute('aria-hidden', 'false');
+  setSearchPlaceholder('checkin');
+  clearSearch();
 }
 
 function closeCheckin() {
@@ -296,6 +370,8 @@ function closeCheckin() {
   document.body.classList.remove('checkin-open');
   checkinView.setAttribute('aria-hidden', 'true');
   closeCheckinPicker();
+  setSearchPlaceholder(getActiveContext());
+  clearSearch();
 }
 
 function openAgents() {
@@ -305,12 +381,16 @@ function openAgents() {
   closeCheckin();
   document.body.classList.add('agent-open');
   agentView.setAttribute('aria-hidden', 'false');
+  setSearchPlaceholder('agent');
+  clearSearch();
 }
 
 function closeAgents() {
   if (!agentView) return;
   document.body.classList.remove('agent-open');
   agentView.setAttribute('aria-hidden', 'true');
+  setSearchPlaceholder(getActiveContext());
+  clearSearch();
 }
 
 function openStore() {
@@ -321,27 +401,642 @@ function openStore() {
   closeAgents();
   document.body.classList.add('store-open');
   storeView.setAttribute('aria-hidden', 'false');
+  setSearchPlaceholder('store');
+  clearSearch();
 }
 
 function closeStore() {
   if (!storeView) return;
   document.body.classList.remove('store-open');
   storeView.setAttribute('aria-hidden', 'true');
+  setSearchPlaceholder(getActiveContext());
+  clearSearch();
+}
+
+function openProfile() {
+  if (!profileView) return;
+  closeModal();
+  closeMenu();
+  closeCheckin();
+  closeAgents();
+  closeStore();
+  document.body.classList.add('profile-open');
+  profileView.setAttribute('aria-hidden', 'false');
+  profileView.classList.remove('is-entering');
+  requestAnimationFrame(() => {
+    profileView.classList.add('is-entering');
+    window.setTimeout(() => profileView.classList.remove('is-entering'), 260);
+  });
+  setSearchPlaceholder('profile');
+  clearSearch();
+  loadProfileView();
+}
+
+function closeProfile() {
+  if (!profileView) return;
+  document.body.classList.remove('profile-open');
+  profileView.setAttribute('aria-hidden', 'true');
+  setSearchPlaceholder(getActiveContext());
+  clearSearch();
+}
+
+let inventoryTab = 'avatar';
+let inventoryStoreItems = [];
+let inventoryAvatarItems = [];
+let inventoryLoaded = false;
+
+function openInventory() {
+  if (!inventoryView) return;
+  closeModal();
+  closeMenu();
+  closeCheckin();
+  closeAgents();
+  closeStore();
+  closeProfile();
+  document.body.classList.add('inventory-open');
+  inventoryView.setAttribute('aria-hidden', 'false');
+  setInventoryTab(inventoryTab || 'avatar');
+  setSearchPlaceholder('inventory');
+  clearSearch();
+  loadInventory();
+}
+
+function closeInventory() {
+  if (!inventoryView) return;
+  document.body.classList.remove('inventory-open');
+  inventoryView.setAttribute('aria-hidden', 'true');
+  setSearchPlaceholder(getActiveContext());
+  clearSearch();
+}
+
+function setInventoryTab(tab) {
+  inventoryTab = tab || 'avatar';
+  inventoryTabs.forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.invTab === inventoryTab);
+  });
+  if (inventoryTitleEl) {
+    const label = inventoryTab === 'avatar' ? 'Avatar' : inventoryTab === 'title' ? 'Danh hiệu' : 'Icon';
+    inventoryTitleEl.textContent = `Kho • ${label}`;
+  }
+  renderInventory();
+}
+
+function normalizeInventoryItem(input, fallbackName = 'Vật phẩm') {
+  if (!input) return null;
+  return {
+    name: input.name || input.title || fallbackName,
+    image: input.image || '/placeholder.svg',
+    price: input.price || '',
+  };
+}
+
+function createInventoryCell(item, { interactive = true, showInfo = true } = {}) {
+  const isButton = interactive;
+  const cell = document.createElement(isButton ? 'button' : 'div');
+  if (isButton) cell.type = 'button';
+  cell.className = interactive ? 'inv-cell' : 'inv-cell inv-cell-static';
+  if (!item) {
+    if (isButton) cell.disabled = true;
+    cell.setAttribute('aria-hidden', 'true');
+    return cell;
+  }
+  if (showInfo) {
+    cell.title = item.name || 'Vật phẩm';
+    cell.setAttribute('aria-label', item.name || 'Vật phẩm');
+  }
+
+  const img = document.createElement('img');
+  setupProgressiveImage(img, item.image, { alt: showInfo ? item.name || 'Vật phẩm' : '' });
+  cell.appendChild(img);
+
+  if (interactive) {
+    cell.addEventListener('click', () => {
+      openModal(item.name || 'Vật phẩm', item.price ? `Giá: ${item.price}` : 'Vật phẩm trong kho.');
+    });
+  }
+  return cell;
+}
+
+function renderInventory() {
+  if (!inventoryGrid) return;
+  inventoryGrid.innerHTML = '';
+
+  const hasAny =
+    (Array.isArray(inventoryAvatarItems) && inventoryAvatarItems.length) ||
+    (Array.isArray(inventoryStoreItems) && inventoryStoreItems.length);
+  if (!hasAny) {
+    inventoryGrid.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
+    return;
+  }
+
+  if (inventoryTab === 'title') {
+    inventoryGrid.classList.add('inventory-grid--labels');
+    const titles = ['Cửu Tiêu Đế Tôn', 'Vạn Bảo Thiên Quân', 'Thái Cổ Thần Hoàng'];
+    const filled = titles.slice(0, 100);
+    while (filled.length < 100) filled.push('');
+    filled.forEach((label) => {
+      const cell = document.createElement('div');
+      cell.className = 'inv-cell inv-cell-label';
+      cell.textContent = label || '';
+      if (!label) cell.setAttribute('aria-hidden', 'true');
+      inventoryGrid.appendChild(cell);
+    });
+    return;
+  }
+
+  inventoryGrid.classList.remove('inventory-grid--labels');
+  const term = getSearchTerm();
+  const source =
+    inventoryTab === 'avatar'
+      ? inventoryAvatarItems
+      : inventoryTab === 'icon'
+        ? inventoryStoreItems
+        : inventoryStoreItems;
+
+  const base = Array.isArray(source) ? source : [];
+  const filtered = term
+    ? base.filter((item) => String(item.name || item.title || '').toLowerCase().includes(term))
+    : base;
+
+  const list = filtered.map((item) =>
+    inventoryTab === 'avatar'
+      ? { image: item.image || '/placeholder.svg', name: '', price: '' }
+      : normalizeInventoryItem(item, 'Vật phẩm')
+  );
+  const filled = list.slice(0, 100);
+  while (filled.length < 100) filled.push(null);
+
+  filled.forEach((item) => {
+    inventoryGrid.appendChild(
+      createInventoryCell(item, {
+        interactive: inventoryTab !== 'avatar',
+        showInfo: inventoryTab !== 'avatar',
+      })
+    );
+  });
+}
+
+async function loadInventory() {
+  if (inventoryLoaded) {
+    renderInventory();
+    return;
+  }
+  inventoryLoaded = true;
+  try {
+    const [storeRes, gamesRes] = await Promise.all([fetch('/api/store'), fetch('/api/games')]);
+    const storeData = await storeRes.json();
+    const gamesData = await gamesRes.json();
+
+    inventoryStoreItems = Array.isArray(storeData.items) ? storeData.items : [];
+    const games = Array.isArray(gamesData.games) ? gamesData.games : [];
+    inventoryAvatarItems = games.filter((g) => g && g.type === 'rank' && g.image);
+  } catch (err) {
+    inventoryStoreItems = [];
+    inventoryAvatarItems = [];
+  }
+  if (!inventoryStoreItems.length && !inventoryAvatarItems.length) {
+    if (inventoryGrid) {
+      inventoryGrid.innerHTML = '';
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'Không tải được dữ liệu kho.';
+      inventoryGrid.appendChild(empty);
+    }
+    return;
+  }
+  renderInventory();
+}
+
+function parseNumberLike(value) {
+  if (value === undefined || value === null) return 0;
+  const raw = String(value).trim();
+  if (!raw) return 0;
+  const numeric = Number(raw.replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function formatGems(value) {
+  const numeric = parseNumberLike(value);
+  if (!numeric) return '0';
+  return numeric.toLocaleString('vi-VN');
+}
+
+function getProfileOverride() {
+  try {
+    const raw = localStorage.getItem('vme_profile_override');
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    return null;
+  }
+}
+
+function setProfileOverride(profile) {
+  try {
+    localStorage.setItem('vme_profile_override', JSON.stringify(profile));
+  } catch (err) {
+    // ignore storage errors
+  }
+}
+
+function applyProfileToHeader(profile) {
+  if (!profile) return;
+  if (pro5NameEl && profile.name) pro5NameEl.textContent = String(profile.name);
+  if (balanceValueEl) {
+    const balance = profile.balance ?? 10000;
+    balanceValueEl.textContent = formatGems(balance);
+  }
+}
+
+function createProfileField(labelText, name, value = '') {
+  const wrap = document.createElement('div');
+  wrap.className = 'profile-field';
+
+  const label = document.createElement('label');
+  label.textContent = labelText;
+
+  const input = document.createElement('input');
+  input.name = name;
+  input.value = String(value ?? '');
+  input.autocomplete = 'off';
+
+  wrap.appendChild(label);
+  wrap.appendChild(input);
+  return wrap;
+}
+
+async function copyToClipboard(text) {
+  const value = String(text || '');
+  if (!value) return false;
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch (err) {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '0';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      const ok = document.execCommand('copy');
+      textarea.remove();
+      return ok;
+    } catch (err2) {
+      return false;
+    }
+  }
+}
+
+function openManualCopyModal(title, value) {
+  const wrap = document.createElement('div');
+  wrap.className = 'copy-fallback';
+
+  const hint = document.createElement('div');
+  hint.className = 'copy-fallback-hint';
+  hint.textContent = 'Trình duyệt chặn quyền copy. Hãy bôi đen và copy thủ công:';
+
+  const input = document.createElement('input');
+  input.className = 'copy-fallback-input';
+  input.type = 'text';
+  input.value = String(value || '');
+  input.readOnly = true;
+
+  wrap.appendChild(hint);
+  wrap.appendChild(input);
+
+  openModal(title, wrap);
+
+  setTimeout(() => {
+    try {
+      input.focus();
+      input.select();
+      input.setSelectionRange(0, input.value.length);
+    } catch (err) {
+      // ignore
+    }
+  }, 0);
+}
+
+function openEditProfileModal(profile) {
+  const form = document.createElement('form');
+  form.className = 'pro5-edit-form';
+
+  const grid = document.createElement('div');
+  grid.className = 'pro5-edit-grid';
+
+  const fields = [
+    ['Tên', 'name', profile.name],
+    ['Username', 'username', profile.username],
+    ['ID', 'uid', profile.uid],
+    ['Trạng thái', 'status', profile.status],
+    ['Danh hiệu', 'title', profile.title],
+    ['Level', 'level', profile.level],
+    ['Mã mời', 'inviteCode', profile.inviteCode],
+    ['Avatar (link ảnh)', 'avatar', profile.avatar],
+    ['Số dư (tiên ngọc)', 'balance', profile.balance],
+    ['Email', 'email', profile.email],
+    ['SĐT', 'phone', profile.phone],
+    ['Địa chỉ', 'address', profile.address],
+  ];
+
+  fields.forEach(([label, name, value]) => {
+    grid.appendChild(createProfileField(label, name, value));
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'pro5-edit-actions';
+  const save = document.createElement('button');
+  save.type = 'submit';
+  save.className = 'profile-save';
+  save.textContent = 'Lưu';
+  actions.appendChild(save);
+
+  form.appendChild(grid);
+  form.appendChild(actions);
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const override = {
+      ...profile,
+      name: String(formData.get('name') || '').trim() || profile.name,
+      username: String(formData.get('username') || '').trim(),
+      uid: String(formData.get('uid') || '').trim(),
+      status: String(formData.get('status') || '').trim(),
+      title: String(formData.get('title') || '').trim() || profile.title,
+      level: String(formData.get('level') || '').trim() || profile.level,
+      inviteCode: String(formData.get('inviteCode') || '').trim() || profile.inviteCode,
+      avatar: String(formData.get('avatar') || '').trim() || profile.avatar,
+      balance: String(formData.get('balance') || '').trim() || profile.balance,
+      email: String(formData.get('email') || '').trim(),
+      phone: String(formData.get('phone') || '').trim(),
+      address: String(formData.get('address') || '').trim(),
+    };
+    setProfileOverride(override);
+    applyProfileToHeader(override);
+    renderProfileFrame(override);
+    closeModal();
+  });
+
+  openModal('Chỉnh sửa thông tin', form);
+}
+
+function renderProfileFrame(profile) {
+  if (!profileFrame) return;
+  profileFrame.innerHTML = '';
+
+  const displayName = String(profile.username || profile.name || 'Anh Quân').trim();
+  const uidText = String(profile.uid || '').trim();
+  const statusText = String(profile.status || 'Chưa xác thực').trim();
+  const inviteCode = String(profile.inviteCode || '').trim();
+  const levelText = String(profile.level || '').trim();
+  const titleText = String(profile.title || '').trim();
+  const vipText = String(profile.vip || '').trim();
+
+  const hero = document.createElement('section');
+  hero.className = 'pro5-hero';
+
+  const heroRow = document.createElement('div');
+  heroRow.className = 'pro5-hero-row';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'pro5-hero-avatar';
+  const img = document.createElement('img');
+  setupProgressiveImage(img, profile.avatar, { alt: displayName || 'Avatar' });
+  avatar.appendChild(img);
+
+  const info = document.createElement('div');
+  info.className = 'pro5-hero-info';
+
+  const nameRow = document.createElement('div');
+  nameRow.className = 'pro5-hero-name-row';
+
+  const name = document.createElement('div');
+  name.className = 'pro5-hero-name';
+  name.textContent = displayName;
+
+  const actions = document.createElement('div');
+  actions.className = 'pro5-hero-actions';
+
+  if (vipText) {
+    const vip = document.createElement('span');
+    vip.className = 'pro5-vip';
+    vip.innerHTML = `
+      <span class="pro5-vip-icon" aria-hidden="true">
+        <svg class="lucide" viewBox="0 0 24 24">
+          <use href="#icon-crown" />
+        </svg>
+      </span>
+      <span class="pro5-vip-text">VIP ${vipText}</span>
+    `;
+    actions.appendChild(vip);
+  }
+
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'pro5-hero-edit';
+  editBtn.textContent = 'Chỉnh sửa';
+  editBtn.addEventListener('click', () => openEditProfileModal(profile));
+  actions.appendChild(editBtn);
+
+  nameRow.appendChild(name);
+  nameRow.appendChild(actions);
+
+  const metaLine = document.createElement('div');
+  metaLine.className = 'pro5-hero-meta';
+  const parts = [];
+  if (titleText) parts.push(titleText);
+  if (levelText) parts.push(`Lv. ${levelText}`);
+  metaLine.textContent = parts.join(' • ');
+
+  const uidLine = document.createElement('div');
+  uidLine.className = 'pro5-hero-sub';
+  uidLine.textContent = uidText ? `ID: ${uidText}` : '';
+
+  const statusLine = document.createElement('div');
+  statusLine.className = 'pro5-hero-status';
+  statusLine.textContent = statusText;
+
+  info.appendChild(nameRow);
+  if (metaLine.textContent) info.appendChild(metaLine);
+  if (uidLine.textContent) info.appendChild(uidLine);
+  info.appendChild(statusLine);
+
+  heroRow.appendChild(avatar);
+  heroRow.appendChild(info);
+  hero.appendChild(heroRow);
+
+  if (inviteCode) {
+    const inviteRow = document.createElement('div');
+    inviteRow.className = 'pro5-invite-row';
+
+    const code = document.createElement('div');
+    code.className = 'pro5-invite-code';
+    code.textContent = inviteCode;
+
+    const copy = document.createElement('button');
+    copy.type = 'button';
+    copy.className = 'pro5-invite-copy';
+    copy.textContent = 'Copy';
+    copy.addEventListener('click', async () => {
+      const ok = await copyToClipboard(code.textContent);
+      if (ok) {
+        const prev = copy.textContent;
+        copy.textContent = 'Đã copy';
+        window.setTimeout(() => {
+          copy.textContent = prev;
+        }, 900);
+        return;
+      }
+      openManualCopyModal('Mã giới thiệu', code.textContent);
+    });
+
+    inviteRow.appendChild(code);
+    inviteRow.appendChild(copy);
+    hero.appendChild(inviteRow);
+  }
+
+  profileFrame.appendChild(hero);
+}
+
+function renderPlayedGames(gamesList) {
+  if (!profileGamesGrid) return;
+  profileGamesGrid.innerHTML = '';
+
+  const term = getSearchTerm();
+  const base = Array.isArray(gamesList) ? gamesList : [];
+  const filtered = term
+    ? base.filter((game) => String(game.title || '').toLowerCase().includes(term))
+    : base;
+
+  if (!filtered.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = term ? 'Không tìm thấy game.' : 'Chưa có game đã chơi.';
+    profileGamesGrid.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach((game) => {
+    const card = document.createElement('article');
+    card.className = 'played-card';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'played-thumb';
+    const img = document.createElement('img');
+    setupProgressiveImage(img, game.image, { alt: game.title || 'Game' });
+    thumb.appendChild(img);
+
+    const info = document.createElement('div');
+    info.className = 'played-info';
+
+    const title = document.createElement('div');
+    title.className = 'played-title';
+    title.textContent = game.title || 'Game';
+
+    const meta = document.createElement('div');
+    meta.className = 'played-meta';
+    const lastPlayed = String(game.lastPlayed || '').trim();
+    const hours = String(game.hours || '').trim();
+    const level = String(game.level || '').trim();
+    if (lastPlayed) {
+      const item = document.createElement('span');
+      item.textContent = `Lần cuối: ${lastPlayed}`;
+      meta.appendChild(item);
+    }
+    if (hours) {
+      const item = document.createElement('span');
+      item.textContent = `Giờ chơi: ${hours}`;
+      meta.appendChild(item);
+    }
+    if (level) {
+      const item = document.createElement('span');
+      item.textContent = `Lv. ${level}`;
+      meta.appendChild(item);
+    }
+
+    info.appendChild(title);
+    if (meta.childNodes.length) info.appendChild(meta);
+
+    card.appendChild(thumb);
+    card.appendChild(info);
+    profileGamesGrid.appendChild(card);
+  });
+}
+
+async function loadProfileView() {
+  if (!profileFrame || !profileGamesGrid) return;
+  profileFrame.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
+  profileGamesGrid.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
+
+  try {
+    const [profileRes, gamesRes] = await Promise.all([
+      fetch('/api/profile'),
+      fetch('/api/profile/games'),
+    ]);
+    const profileData = await profileRes.json();
+    const gamesData = await gamesRes.json();
+
+    const baseProfile = profileData.profile || profileData || {};
+    const override = getProfileOverride();
+    const merged = { ...baseProfile, ...(override || {}) };
+
+    applyProfileToHeader(merged);
+    renderProfileFrame(merged);
+    profilePlayedGames = Array.isArray(gamesData.games) ? gamesData.games : [];
+    renderPlayedGames(profilePlayedGames);
+  } catch (error) {
+    profileFrame.innerHTML = '';
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Không tải được dữ liệu Pro5.';
+    profileFrame.appendChild(empty);
+
+    profileGamesGrid.innerHTML = '';
+    const empty2 = document.createElement('div');
+    empty2.className = 'empty';
+    empty2.textContent = 'Không tải được danh sách game đã chơi.';
+    profileGamesGrid.appendChild(empty2);
+  }
+}
+
+async function loadProfileSummary() {
+  try {
+    const response = await fetch('/api/profile');
+    const data = await response.json();
+    const baseProfile = data.profile || data || {};
+    const override = getProfileOverride();
+    const merged = { ...baseProfile, ...(override || {}) };
+    applyProfileToHeader(merged);
+  } catch (err) {
+    applyProfileToHeader({ name: 'Anh Quân', balance: 10000 });
+  }
 }
 
 function renderStore() {
   if (!storeGridEl) return;
   storeGridEl.innerHTML = '';
 
-  if (!storeItems.length) {
+  const term = getSearchTerm();
+  const base = storeItems;
+  const filtered = term
+    ? base.filter((item) => String(item.name || '').toLowerCase().includes(term))
+    : base;
+
+  if (!filtered.length) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = 'Chưa có dữ liệu cửa hàng.';
+    empty.textContent = term ? 'Không tìm thấy vật phẩm.' : 'Chưa có dữ liệu cửa hàng.';
     storeGridEl.appendChild(empty);
     return;
   }
 
-  storeItems.forEach((item) => {
+  filtered.forEach((item) => {
     const card = document.createElement('article');
     card.className = 'store-item';
 
@@ -390,15 +1085,21 @@ function renderAgents() {
   if (!agentListEl) return;
   agentListEl.innerHTML = '';
 
-  if (!agents.length) {
+  const term = getSearchTerm();
+  const base = agents;
+  const filtered = term
+    ? base.filter((agent) => String(agent.name || '').toLowerCase().includes(term))
+    : base;
+
+  if (!filtered.length) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = 'Chưa có đại lý.';
+    empty.textContent = term ? 'Không tìm thấy đại lý.' : 'Chưa có đại lý.';
     agentListEl.appendChild(empty);
     return;
   }
 
-  agents.forEach((agent, index) => {
+  filtered.forEach((agent, index) => {
     const row = document.createElement('article');
     row.className = 'game-row agent-row';
     row.style.setProperty('--delay', `${index * 40}ms`);
@@ -459,7 +1160,14 @@ async function loadAgents() {
 
 function openModal(title, description) {
   modalTitle.textContent = title || 'Mô tả';
-  modalBody.textContent = description || '';
+  modalBody.textContent = '';
+  if (description instanceof Node) {
+    modalBody.style.whiteSpace = 'normal';
+    modalBody.appendChild(description);
+  } else {
+    modalBody.style.whiteSpace = 'pre-line';
+    modalBody.textContent = description || '';
+  }
   modalBackdrop.classList.add('open');
   document.body.classList.add('modal-open');
 }
@@ -865,6 +1573,7 @@ function setActiveTab(tab) {
   listEl.classList.toggle('h5-list', tab === 'h5');
   listEl.classList.toggle('rank-list', tab === 'rank');
   renderList();
+  setSearchPlaceholder(getActiveContext());
 }
 
 function setActiveNav(nav) {
@@ -879,8 +1588,12 @@ function goHome() {
   closeCheckin();
   closeAgents();
   closeStore();
+  closeProfile();
+  closeInventory();
   setActiveNav('home');
   setActiveTab('home');
+  setSearchPlaceholder('home');
+  clearSearch();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -890,8 +1603,12 @@ function goRank() {
   closeCheckin();
   closeAgents();
   closeStore();
+  closeProfile();
+  closeInventory();
   setActiveNav('rank');
   setActiveTab('rank');
+  setSearchPlaceholder('rank');
+  clearSearch();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -990,16 +1707,22 @@ async function loadGames() {
   }
 }
 
-searchInput.addEventListener('input', renderList);
+searchInput.addEventListener('input', () => {
+  refreshActiveSearch();
+});
 tabButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.tab || 'home';
     setActiveTab(tab);
+    clearSearch();
   });
 });
 navButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const nav = btn.dataset.nav || 'home';
+    if ((document.body.classList.contains('profile-open') || document.body.classList.contains('inventory-open')) && nav !== 'home') {
+      return;
+    }
     if (nav === 'home') {
       goHome();
       return;
@@ -1027,6 +1750,8 @@ navButtons.forEach((btn) => {
     closeCheckin();
     closeAgents();
     closeStore();
+    closeProfile();
+    closeInventory();
     setActiveNav(nav);
   });
 });
@@ -1078,6 +1803,57 @@ if (storeHomeButton) {
     goHome();
   });
 }
+if (pro5Btn) {
+  pro5Btn.addEventListener('click', () => {
+    openProfile();
+  });
+}
+if (profileCloseButton) {
+  profileCloseButton.addEventListener('click', () => {
+    closeProfile();
+  });
+}
+if (profileHomeButton) {
+  profileHomeButton.addEventListener('click', () => {
+    goHome();
+  });
+}
+if (khoButton) {
+  khoButton.addEventListener('click', () => {
+    openInventory();
+  });
+}
+if (inventoryCloseButton) {
+  inventoryCloseButton.addEventListener('click', () => {
+    closeInventory();
+  });
+}
+if (inventoryHomeButton) {
+  inventoryHomeButton.addEventListener('click', () => {
+    openProfile();
+  });
+}
+function handleInventoryTabInteraction(event) {
+  const tabBtn = event.target.closest('.inventory-tab');
+  if (!tabBtn) return;
+  event.preventDefault();
+  setInventoryTab(tabBtn.dataset.invTab || 'avatar');
+}
+if (inventoryTabsWrap) {
+  inventoryTabsWrap.addEventListener('touchstart', handleInventoryTabInteraction, { passive: false });
+  inventoryTabsWrap.addEventListener('pointerdown', handleInventoryTabInteraction);
+  inventoryTabsWrap.addEventListener('click', handleInventoryTabInteraction);
+  inventoryTabsWrap.addEventListener('touchend', handleInventoryTabInteraction, { passive: false });
+  inventoryTabsWrap.addEventListener('pointerup', handleInventoryTabInteraction);
+} else if (inventoryTabs.length) {
+  inventoryTabs.forEach((btn) => {
+    btn.addEventListener('touchstart', handleInventoryTabInteraction, { passive: false });
+    btn.addEventListener('pointerdown', handleInventoryTabInteraction);
+    btn.addEventListener('click', handleInventoryTabInteraction);
+    btn.addEventListener('touchend', handleInventoryTabInteraction, { passive: false });
+    btn.addEventListener('pointerup', handleInventoryTabInteraction);
+  });
+}
 if (checkinMonthBtn && checkinPicker) {
   checkinMonthBtn.addEventListener('click', (event) => {
     event.stopPropagation();
@@ -1123,6 +1899,10 @@ document.addEventListener('keydown', (event) => {
     closeCheckin();
     closeAgents();
     closeStore();
+    closeProfile();
+    closeInventory();
   }
 });
 loadGames();
+loadProfileSummary();
+setSearchPlaceholder(getActiveContext());
