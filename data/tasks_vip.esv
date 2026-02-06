@@ -1,0 +1,5 @@
+id;title;description;reward;tag
+VIP_TOPUP_50M;Nạp 50 triệu;Nạp tích lũy từ 50.000.000 VNĐ;Khung VIP;Vip
+VIP_PLAY_7;Chơi 7 ngày liên tục;Đăng nhập và chơi mỗi ngày trong 7 ngày;200 Tiên ngọc;Vip
+VIP_SPEND_1M;Tiêu 1.000.000;Tiêu 1.000.000 Tiên ngọc trong cửa hàng;Avatar VIP;Vip
+VIP_WIN_10;Thắng 10 trận;Thắng 10 trận bất kỳ trong tuần;500 Tiên ngọc;Vip

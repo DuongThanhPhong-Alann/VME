@@ -1,0 +1,5 @@
+id;title;description;reward;tag
+EVT_NEWYEAR;Event Tân Niên;Hoàn thành 3 nhiệm vụ bất kỳ trong event;100 Tiên ngọc;Event
+EVT_COLLECT_5;Thu thập 5 vật phẩm;Nhận 5 vật phẩm từ cửa hàng/đổi quà;Rương quà;Event
+EVT_INVITE_3;Mời 3 bạn bè;Có 3 người nhập mã mời của bạn;300 Tiên ngọc;Event
+EVT_PLAY_3_GAMES;Chơi 3 game khác nhau;Chơi ít nhất 3 game khác nhau trong ngày;80 Tiên ngọc;Event

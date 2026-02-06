@@ -199,7 +199,7 @@ function readGamesFromExcel() {
 function readRowsFromFile(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return [];
   const ext = path.extname(filePath).toLowerCase();
-  if (ext === '.csv' || ext === '.tsv') {
+  if (ext === '.csv' || ext === '.tsv' || ext === '.esv') {
     const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '');
     const firstLine = raw.split(/\r?\n/).find((line) => line.trim().length) || '';
     const commaCount = (firstLine.match(/,/g) || []).length;
@@ -276,6 +276,48 @@ const PROFILE_GAMES_CSV_PATH =
     path.join(__dirname, 'profile_games.csv'),
   ]);
 
+const TASK_INVITE_CSV_PATH =
+  (process.env.TASK_INVITE_CSV ? normalizeFsPath(process.env.TASK_INVITE_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'data', 'tasks_invite.csv'),
+    path.join(__dirname, 'data', 'tasks_invite.esv'),
+  ]);
+
+const TASK_DAILY_CSV_PATH =
+  (process.env.TASK_DAILY_CSV ? normalizeFsPath(process.env.TASK_DAILY_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'data', 'tasks_daily.csv'),
+    path.join(__dirname, 'data', 'tasks_daily.esv'),
+  ]);
+
+const TASK_VIP_CSV_PATH =
+  (process.env.TASK_VIP_CSV ? normalizeFsPath(process.env.TASK_VIP_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'data', 'tasks_vip.csv'),
+    path.join(__dirname, 'data', 'tasks_vip.esv'),
+  ]);
+
+const TASK_EVENT_CSV_PATH =
+  (process.env.TASK_EVENT_CSV ? normalizeFsPath(process.env.TASK_EVENT_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'data', 'tasks_event.csv'),
+    path.join(__dirname, 'data', 'tasks_event.esv'),
+  ]);
+
+const RANK_INVITES_CSV_PATH =
+  (process.env.RANK_INVITES_CSV ? normalizeFsPath(process.env.RANK_INVITES_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'data', 'rank_invites.csv'),
+    path.join(__dirname, 'data', 'rank_invites.esv'),
+  ]);
+
+const LINKED_TASKS_CSV_PATH =
+  (process.env.LINKED_TASKS_CSV ? normalizeFsPath(process.env.LINKED_TASKS_CSV) : '') ||
+  findFirstExisting([
+    path.join(__dirname, 'data', 'linked_tasks.csv'),
+    path.join(__dirname, 'data', 'linked_tasks.esv'),
+  ]);
+
 function readGamesFromSources() {
   const games = [];
   const hotRows = readRowsFromFile(HOT_CSV_PATH);
@@ -302,6 +344,12 @@ function computeCacheKey() {
     STORE_CSV_PATH,
     PROFILE_CSV_PATH,
     PROFILE_GAMES_CSV_PATH,
+    TASK_INVITE_CSV_PATH,
+    TASK_DAILY_CSV_PATH,
+    TASK_VIP_CSV_PATH,
+    TASK_EVENT_CSV_PATH,
+    RANK_INVITES_CSV_PATH,
+    LINKED_TASKS_CSV_PATH,
   ].filter(Boolean);
   const parts = [];
   for (const file of files) {
@@ -324,6 +372,11 @@ let agentCache = { key: '', agents: [] };
 let storeCache = { key: '', items: [] };
 let profileCache = { key: '', profile: null };
 let playedGamesCache = { key: '', games: [] };
+let tasksCache = {
+  key: '',
+  tasks: { invite: [], daily: [], vip: [], event: [] },
+  links: [],
+};
 
 function getGames() {
   try {
@@ -359,10 +412,22 @@ function mapRowToAgent(row, index) {
     'gioi thieu',
     'note',
   ]);
+
+  const ratingRaw = pickValue(normalized, ['rating', 'danh gia', 'danhgia', 'sao', 'star', 'stars']);
+  const ratingParsed = Number(String(ratingRaw).replace(/[^0-9.]/g, ''));
+  const deterministic = 4 + (((index + 1) * 37) % 10) / 10; // 4.0 -> 4.9
+  const rating = !Number.isNaN(ratingParsed) && ratingParsed > 0 ? Math.max(0, Math.min(5, ratingParsed)) : deterministic;
+
+  const phone =
+    pickValue(normalized, ['phone', 'sdt', 'so dien thoai', 'so dt', 'tel', 'lien he', 'lienhe']) ||
+    `09${String(10000000 + ((index + 3) * 731421) % 90000000)}`;
+
   return {
     name,
     image: imageRaw ? toMediaUrl(imageRaw) : '/placeholder.svg',
     info,
+    rating,
+    phone,
   };
 }
 
@@ -560,6 +625,144 @@ function getPlayedGames() {
   return playedGamesCache.games;
 }
 
+function mapRowToTask(row, index, category) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(row || {})) {
+    normalized[normalizeKey(key)] = value;
+  }
+  const id =
+    pickValue(normalized, ['id', 'ma', 'code']) ||
+    `${String(category || 'task').toUpperCase()}_${String(index + 1).padStart(3, '0')}`;
+  const title =
+    pickValue(normalized, ['title', 'ten', 'ten nhiem vu', 'tennhiemvu', 'nhiem vu', 'task']) ||
+    `Nhiệm vụ ${index + 1}`;
+  const description = pickValue(normalized, ['description', 'desc', 'mo ta', 'mota', 'noi dung', 'noidung']) || '';
+  const reward = pickValue(normalized, ['reward', 'thuong', 'phan thuong', 'phantthuong', 'gift']) || '';
+  const tag = pickValue(normalized, ['tag', 'type', 'loai', 'category']) || '';
+  return {
+    id: String(id).trim(),
+    title: String(title).trim(),
+    description: String(description).trim(),
+    reward: String(reward).trim(),
+    tag: String(tag).trim(),
+  };
+}
+
+function readTasksFromFile(filePath, category) {
+  const rows = readRowsFromFile(filePath);
+  return rows
+    .map((row, index) => mapRowToTask(row, index, category))
+    .filter((task) => task && task.title);
+}
+
+function mapRowToRankUser(row, index) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(row || {})) {
+    normalized[normalizeKey(key)] = value;
+  }
+  const name =
+    pickValue(normalized, ['ten', 'tên', 'name', 'username', 'user', 'player']) || `Người chơi ${index + 1}`;
+  const avatarRaw = pickValue(normalized, ['avatar', 'anh', 'image', 'img', 'hinh', 'logo']);
+  const money = pickValue(normalized, ['money', 'tien', 'so tien', 'sotien', 'amount', 'coin']) || '';
+  const rankRaw = pickValue(normalized, ['rank', 'stt', 'thu hang', 'xephang', 'xep hang']) || String(index + 1);
+  const rankNum = Number(String(rankRaw).replace(/[^0-9]/g, '')) || index + 1;
+  return {
+    rank: rankNum,
+    name: String(name).trim(),
+    avatar: avatarRaw ? toMediaUrl(avatarRaw) : '/placeholder.svg',
+    money: String(money).trim(),
+  };
+}
+
+function readRankUsers() {
+  const rows = readRowsFromFile(RANK_CSV_PATH);
+  return rows.map((row, index) => mapRowToRankUser(row, index)).filter((user) => user && user.name);
+}
+
+function readRankInvites() {
+  const rows = readRowsFromFile(RANK_INVITES_CSV_PATH);
+  const map = new Map();
+  rows.forEach((row) => {
+    const normalized = {};
+    for (const [key, value] of Object.entries(row || {})) {
+      normalized[normalizeKey(key)] = value;
+    }
+    const name = pickValue(normalized, ['name', 'ten', 'tên']);
+    const code = pickValue(normalized, ['invitecode', 'invite code', 'ma moi', 'mamoi', 'code']);
+    if (!name || !code) return;
+    map.set(normalizeKey(name), String(code).trim());
+  });
+  return map;
+}
+
+function readLinkedTasks() {
+  const rows = readRowsFromFile(LINKED_TASKS_CSV_PATH);
+  const map = new Map();
+  rows.forEach((row) => {
+    const normalized = {};
+    for (const [key, value] of Object.entries(row || {})) {
+      normalized[normalizeKey(key)] = value;
+    }
+    const name = pickValue(normalized, ['name', 'ten', 'tên']);
+    if (!name) return;
+    const tasks = [
+      pickValue(normalized, ['task1', 'nhiem vu 1', 'nhiemvu1']),
+      pickValue(normalized, ['task2', 'nhiem vu 2', 'nhiemvu2']),
+      pickValue(normalized, ['task3', 'nhiem vu 3', 'nhiemvu3']),
+    ].filter(Boolean);
+    map.set(normalizeKey(name), tasks);
+  });
+  return map;
+}
+
+function buildLinkedUsers(limit = 3) {
+  const ranked = readRankUsers()
+    .map((user) => ({ user, rankNum: user.rank }))
+    .sort((a, b) => a.rankNum - b.rankNum)
+    .map((entry) => entry.user);
+
+  const top = ranked.slice(0, Math.max(0, Number(limit) || 0));
+  const inviteMap = readRankInvites();
+  const linkedTasksMap = readLinkedTasks();
+
+  return top.map((user) => {
+    const mappedInvite = inviteMap.get(normalizeKey(user.name)) || '';
+    const fallbackInvite = `VME-R${user.rank}-${String(1000 + ((Number(user.rank) || 0) * 73) % 9000)}`;
+    const inviteCode = String(mappedInvite).trim() || fallbackInvite;
+    const tasks =
+      linkedTasksMap.get(normalizeKey(user.name)) || [
+        'Chơi cùng 1 trận',
+        'Tương tác 1 lần',
+        'Share mã mời 1 lần',
+      ];
+    return {
+      ...user,
+      inviteCode,
+      tasks,
+    };
+  });
+}
+
+function getTasksCache() {
+  const key = computeCacheKey();
+  if (!key) {
+    return { tasks: { invite: [], daily: [], vip: [], event: [] }, links: [] };
+  }
+  if (key !== tasksCache.key) {
+    tasksCache = {
+      key,
+      tasks: {
+        invite: readTasksFromFile(TASK_INVITE_CSV_PATH, 'invite'),
+        daily: readTasksFromFile(TASK_DAILY_CSV_PATH, 'daily'),
+        vip: readTasksFromFile(TASK_VIP_CSV_PATH, 'vip'),
+        event: readTasksFromFile(TASK_EVENT_CSV_PATH, 'event'),
+      },
+      links: buildLinkedUsers(3),
+    };
+  }
+  return tasksCache;
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/games', (req, res) => {
@@ -603,6 +806,31 @@ app.get('/api/profile/games', (req, res) => {
     updatedAt: new Date().toISOString(),
     total: games.length,
     games,
+  });
+});
+
+app.get('/api/tasks/links', (req, res) => {
+  const cache = getTasksCache();
+  const links = Array.isArray(cache.links) ? cache.links : [];
+  return res.json({
+    updatedAt: new Date().toISOString(),
+    total: links.length,
+    links,
+  });
+});
+
+app.get('/api/tasks/:category', (req, res) => {
+  const raw = String(req.params.category || '').trim().toLowerCase();
+  const allowed = new Set(['invite', 'daily', 'vip', 'event']);
+  if (!allowed.has(raw)) {
+    return res.status(404).json({ error: 'Unknown task category' });
+  }
+  const cache = getTasksCache();
+  const tasks = cache.tasks[raw] || [];
+  return res.json({
+    updatedAt: new Date().toISOString(),
+    total: tasks.length,
+    tasks,
   });
 });
 

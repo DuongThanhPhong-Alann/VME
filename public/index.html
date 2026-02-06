@@ -80,6 +80,26 @@
         <path d="M3 7l4 4 5-6 5 6 4-4v10H3z" />
         <path d="M5 21h14" />
       </symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </symbol>
+      <symbol id="icon-book" viewBox="0 0 24 24">
+        <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20" />
+        <path d="M20 2H6.5A2.5 2.5 0 0 0 4 4.5v15" />
+        <path d="M20 2v20" />
+      </symbol>
+      <symbol id="icon-phone" viewBox="0 0 24 24">
+        <path
+          d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 3 5.18 2 2 0 0 1 5.11 3h3a2 2 0 0 1 2 1.72c.12.86.31 1.7.57 2.5a2 2 0 0 1-.45 2.11L9 10.91a16 16 0 0 0 6.09 6.09l1.58-1.23a2 2 0 0 1 2.11-.45c.8.26 1.64.45 2.5.57A2 2 0 0 1 22 16.92z"
+        />
+      </symbol>
+      <symbol id="icon-arrow-up-down" viewBox="0 0 24 24">
+        <path d="M8 18l4 4 4-4" />
+        <path d="M12 2v20" />
+        <path d="M16 6l-4-4-4 4" />
+      </symbol>
     </svg>
 
     <div class="page">
@@ -181,7 +201,7 @@
                   </button>
                 </div>
               </div>
-              <button class="menu-item" type="button" role="menuitem">
+              <button class="menu-item" type="button" role="menuitem" data-action="task-invite">
                 <span class="menu-icon">
                   <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
                     <use href="#icon-user" />
@@ -217,12 +237,41 @@
 	        <div class="agent-card">
 	          <div class="agent-head">
 	            <div class="agent-title">Đại lý</div>
-	            <button class="agent-home" type="button" data-agent-home aria-label="Trang chủ" title="Trang chủ">
-	              <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
-	                <use href="#icon-home" />
-	              </svg>
-	            </button>
+              <div class="agent-actions">
+                <button class="agent-action" type="button" data-agent-upload aria-label="Upload" title="Upload">
+                  <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#icon-upload" />
+                  </svg>
+                </button>
+                <button class="agent-action" type="button" data-agent-sort aria-label="Sort" title="Sort">
+                  <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#icon-arrow-up-down" />
+                  </svg>
+                </button>
+                <button class="agent-action" type="button" data-agent-policy aria-label="Chính sách" title="Chính sách">
+                  <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#icon-book" />
+                  </svg>
+                </button>
+                <button class="agent-action" type="button" data-agent-contact aria-label="Liên hệ" title="Liên hệ">
+                  <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="#icon-phone" />
+                  </svg>
+                </button>
+	              <button class="agent-home" type="button" data-agent-home aria-label="Trang chủ" title="Trang chủ">
+	                <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+	                  <use href="#icon-home" />
+	                </svg>
+	              </button>
+              </div>
 	          </div>
+            <input
+              class="agent-upload-input"
+              id="agentUploadInput"
+              type="file"
+              accept=".csv,.tsv,.esv,text/csv,text/plain"
+              hidden
+            />
 	          <div class="agent-list" id="agentList">
 	            <div class="loading">Đang tải dữ liệu...</div>
 	          </div>
@@ -436,6 +485,14 @@
       <section class="list" id="gameList">
         <div class="loading">Đang tải dữ liệu...</div>
       </section>
+    </div>
+
+    <div class="chatbot-float" aria-label="Chatbot">
+      <button class="chatbot-btn" type="button" id="chatbotBtn" aria-label="Chatbot" title="Chatbot">
+        <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+          <use href="#icon-message-square" />
+        </svg>
+      </button>
     </div>
 
     <nav class="bottom-nav">

@@ -1,0 +1,6 @@
+id,title,description,reward,tag
+DAY_LOGIN,Đăng nhập,Đăng nhập 1 lần trong ngày,10 Tiên ngọc,Hằng ngày
+DAY_PLAY_30,Chơi 30 phút,Chơi game bất kỳ đủ 30 phút,20 Tiên ngọc,Hằng ngày
+DAY_WIN_1,Thắng 1 trận,Thắng 1 trận bất kỳ,30 Tiên ngọc,Hằng ngày
+DAY_SHARE_POST,Share bài viết,Share 1 bài viết sự kiện,15 Tiên ngọc,Hằng ngày
+DAY_INVITE_VIEW,Xem bảng xếp hạng,Xem bảng xếp hạng 1 lần,5 Tiên ngọc,Hằng ngày

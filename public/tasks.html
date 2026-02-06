@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nhiệm vụ</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="tasks-body">
+    <div class="tasks-page">
+      <header class="tasks-head">
+        <button class="tasks-back" type="button" id="tasksBackBtn">Quay lại</button>
+        <div class="tasks-head-title">Nhiệm vụ</div>
+        <a class="tasks-home" href="/">Trang chủ</a>
+      </header>
+
+      <nav class="tasks-tabs" aria-label="Tab nhiệm vụ">
+        <button class="tasks-tab active" type="button" data-tab="invite">Mã mời</button>
+        <button class="tasks-tab" type="button" data-tab="daily">Nhiệm vụ hằng ngày</button>
+        <button class="tasks-tab" type="button" data-tab="vip">Nhiệm vụ VIP</button>
+        <button class="tasks-tab" type="button" data-tab="event">Nhiệm vụ event</button>
+      </nav>
+
+      <main class="tasks-content">
+        <section class="tasks-panel" data-panel="invite">
+          <div class="tasks-card">
+            <div class="tasks-card-title">Mã mời của bạn</div>
+            <div class="invite-row">
+              <div class="invite-code" id="myInviteCode">---</div>
+              <button class="invite-copy" type="button" id="copyInviteBtn">Copy</button>
+            </div>
+          </div>
+
+          <div class="tasks-card">
+            <div class="tasks-card-title">Nhập mã mời</div>
+            <div class="invite-input">
+              <input id="inviteInput" type="text" placeholder="Nhập mã mời..." autocomplete="off" />
+              <button class="invite-submit" type="button" id="inviteSubmitBtn">Liên kết</button>
+            </div>
+            <div class="invite-status" id="inviteStatus" aria-live="polite"></div>
+          </div>
+
+          <div class="tasks-section">
+            <div class="tasks-section-title">Nhiệm vụ</div>
+            <div class="tasks-grid" id="inviteTasksGrid">
+              <div class="loading">Đang tải dữ liệu...</div>
+            </div>
+          </div>
+
+          <div class="tasks-section">
+            <div class="tasks-section-title">Danh sách đã liên kết</div>
+            <div class="linked-grid" id="linkedGrid">
+              <div class="loading">Đang tải dữ liệu...</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tasks-panel" data-panel="daily" hidden>
+          <div class="tasks-section">
+            <div class="tasks-section-title">Nhiệm vụ hằng ngày</div>
+            <div class="tasks-grid" id="dailyTasksGrid">
+              <div class="loading">Đang tải dữ liệu...</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tasks-panel" data-panel="vip" hidden>
+          <div class="tasks-section">
+            <div class="tasks-section-title">Nhiệm vụ VIP</div>
+            <div class="tasks-grid" id="vipTasksGrid">
+              <div class="loading">Đang tải dữ liệu...</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tasks-panel" data-panel="event" hidden>
+          <div class="tasks-section">
+            <div class="tasks-section-title">Nhiệm vụ event</div>
+            <div class="tasks-grid" id="eventTasksGrid">
+              <div class="loading">Đang tải dữ liệu...</div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/tasks.js"></script>
+  </body>
+</html>
+

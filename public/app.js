@@ -10,6 +10,7 @@ const menuItems = Array.from(
 const menuGroup = document.querySelector('.menu-group');
 const menuToggle = document.querySelector('.menu-toggle');
 const checkinTrigger = document.querySelector('[data-action="checkin"]');
+const taskInviteTrigger = document.querySelector('[data-action="task-invite"]');
 const checkinView = document.getElementById('checkinView');
 const checkinGrid = document.getElementById('checkinGrid');
 const checkinMonth = document.getElementById('checkinMonth');
@@ -22,6 +23,11 @@ const checkinHomeButton = document.querySelector('[data-checkin-home]');
 const agentView = document.getElementById('agentView');
 const agentListEl = document.getElementById('agentList');
 const agentHomeButton = document.querySelector('[data-agent-home]');
+const agentUploadButton = document.querySelector('[data-agent-upload]');
+const agentSortButton = document.querySelector('[data-agent-sort]');
+const agentPolicyButton = document.querySelector('[data-agent-policy]');
+const agentContactButton = document.querySelector('[data-agent-contact]');
+const agentUploadInput = document.getElementById('agentUploadInput');
 const storeView = document.getElementById('storeView');
 const storeGridEl = document.getElementById('storeGrid');
 const storeHomeButton = document.querySelector('[data-store-home]');
@@ -41,6 +47,7 @@ const inventoryTabsWrap = document.querySelector('.inventory-tabs');
 const inventoryTabs = Array.from(document.querySelectorAll('.inventory-tab'));
 const inventoryCloseButton = document.querySelector('.inventory-close');
 const inventoryHomeButton = document.querySelector('[data-inventory-home]');
+const chatbotBtn = document.getElementById('chatbotBtn');
 
 const LAZY_DATA_URL_THRESHOLD = 20_000;
 let lazyImageObserver = null;
@@ -196,10 +203,12 @@ let checkinPickerBuilt = false;
 let games = [];
 let activeTab = 'home';
 let agents = [];
+let agentsOriginal = [];
 let agentsLoaded = false;
 let storeItems = [];
 let storeLoaded = false;
 let profilePlayedGames = [];
+let agentSortMode = 'default'; // default | rating | name
 
 const modalBackdrop = document.createElement('div');
 modalBackdrop.className = 'modal-backdrop';
@@ -1086,7 +1095,12 @@ function renderAgents() {
   agentListEl.innerHTML = '';
 
   const term = getSearchTerm();
-  const base = agents;
+  let base = agents;
+  if (agentSortMode === 'rating') {
+    base = [...agents].sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
+  } else if (agentSortMode === 'name') {
+    base = [...agents].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'vi'));
+  }
   const filtered = term
     ? base.filter((agent) => String(agent.name || '').toLowerCase().includes(term))
     : base;
@@ -1103,6 +1117,7 @@ function renderAgents() {
     const row = document.createElement('article');
     row.className = 'game-row agent-row';
     row.style.setProperty('--delay', `${index * 40}ms`);
+    row.dataset.agentIndex = String(index);
 
     const imageWrap = document.createElement('div');
     imageWrap.className = 'game-image';
@@ -1132,14 +1147,144 @@ function renderAgents() {
       info.appendChild(desc);
     }
 
+    const meta = document.createElement('div');
+    meta.className = 'agent-meta';
+
+    const ratingWrap = document.createElement('div');
+    ratingWrap.className = 'agent-rating';
+
+    const stars = document.createElement('div');
+    stars.className = 'agent-stars';
+
+    const ratingValue = Math.max(0, Math.min(5, Number(agent.rating) || 0));
+    const filledStars = Math.round(ratingValue);
+    for (let i = 1; i <= 5; i += 1) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', `agent-star${i <= filledStars ? ' filled' : ''}`);
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('aria-hidden', 'true');
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      use.setAttribute('href', '#icon-star');
+      svg.appendChild(use);
+      stars.appendChild(svg);
+    }
+
+    const ratingText = document.createElement('div');
+    ratingText.className = 'agent-rating-text';
+    ratingText.textContent = `${ratingValue.toFixed(1)}/5`;
+
+    ratingWrap.appendChild(stars);
+    ratingWrap.appendChild(ratingText);
+
+    const rowActions = document.createElement('div');
+    rowActions.className = 'agent-row-actions';
+
+    const policyBtn = document.createElement('button');
+    policyBtn.className = 'agent-row-btn';
+    policyBtn.type = 'button';
+    policyBtn.setAttribute('aria-label', 'Chính sách');
+    policyBtn.setAttribute('title', 'Chính sách');
+    policyBtn.dataset.agentAction = 'policy';
+    policyBtn.dataset.agentName = agent.name || '';
+    policyBtn.innerHTML = `
+      <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+        <use href="#icon-book"></use>
+      </svg>
+    `;
+
+    const contactBtn = document.createElement('button');
+    contactBtn.className = 'agent-row-btn';
+    contactBtn.type = 'button';
+    contactBtn.setAttribute('aria-label', 'Liên hệ đại lý');
+    contactBtn.setAttribute('title', 'Liên hệ đại lý');
+    contactBtn.dataset.agentAction = 'contact';
+    contactBtn.dataset.agentPhone = String(agent.phone || '').trim();
+    contactBtn.dataset.agentName = agent.name || '';
+    contactBtn.innerHTML = `
+      <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+        <use href="#icon-phone"></use>
+      </svg>
+    `;
+
+    rowActions.appendChild(policyBtn);
+    rowActions.appendChild(contactBtn);
+
+    meta.appendChild(ratingWrap);
+    meta.appendChild(rowActions);
+    info.appendChild(meta);
+
     row.appendChild(imageWrap);
     row.appendChild(info);
     agentListEl.appendChild(row);
   });
 }
 
+function parseDelimitedText(rawText, fileName = '') {
+  const raw = String(rawText || '').replace(/^\uFEFF/, '');
+  const firstLine = raw.split(/\r?\n/).find((line) => line.trim().length) || '';
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+  const semiCount = (firstLine.match(/;/g) || []).length;
+  const delimiter =
+    fileName.toLowerCase().endsWith('.esv') ? ';' : tabCount >= commaCount && tabCount >= semiCount ? '\t' : semiCount > commaCount ? ';' : ',';
+
+  const lines = raw.split(/\r?\n/).filter((l) => l.trim().length);
+  if (!lines.length) return [];
+  const headers = lines[0].split(delimiter).map((h) => String(h || '').trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i += 1) {
+    const cells = lines[i].split(delimiter);
+    const obj = {};
+    headers.forEach((h, idx) => {
+      obj[h] = String(cells[idx] ?? '').trim();
+    });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function mapImportedAgent(row, index) {
+  const norm = {};
+  Object.entries(row || {}).forEach(([k, v]) => {
+    norm[String(k || '').toLowerCase().trim()] = v;
+  });
+  const name = norm.ten || norm.name || norm['tên'] || `Đại lý ${index + 1}`;
+  const image = norm.anh || norm['ảnh'] || norm.avatar || norm.image || norm.img || '';
+  const info = norm['thông tin'] || norm['thong tin'] || norm.mota || norm['mô tả'] || norm.description || '';
+  const ratingRaw = norm.rating || norm['danh gia'] || norm['đánh giá'] || norm.sao || '';
+  const ratingParsed = Number(String(ratingRaw).replace(/[^0-9.]/g, ''));
+  const rating = !Number.isNaN(ratingParsed) && ratingParsed > 0 ? Math.max(0, Math.min(5, ratingParsed)) : 4.0 + ((index * 3) % 10) / 10;
+  const phone = norm.phone || norm.sdt || norm['sđt'] || norm['số điện thoại'] || norm['so dien thoai'] || '';
+  return {
+    name: String(name || '').trim(),
+    image: String(image || '').trim() || '/placeholder.svg',
+    info: String(info || '').trim(),
+    rating,
+    phone: String(phone || '').trim(),
+  };
+}
+
+function loadCustomAgentsFromStorage() {
+  try {
+    const raw = localStorage.getItem('vme_agents_custom');
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || !parsed.length) return false;
+    agents = parsed;
+    agentsOriginal = [...agents];
+    agentsLoaded = true;
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 async function loadAgents() {
   if (agentsLoaded) return;
+  if (loadCustomAgentsFromStorage()) {
+    renderAgents();
+    return;
+  }
   agentsLoaded = true;
   if (!agentListEl) return;
   agentListEl.innerHTML = '<div class="loading">Đang tải dữ liệu...</div>';
@@ -1148,6 +1293,7 @@ async function loadAgents() {
     const response = await fetch('/api/agents');
     const data = await response.json();
     agents = Array.isArray(data.agents) ? data.agents : [];
+    agentsOriginal = [...agents];
     renderAgents();
   } catch (error) {
     agentListEl.innerHTML = '';
@@ -1720,7 +1866,11 @@ tabButtons.forEach((btn) => {
 navButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const nav = btn.dataset.nav || 'home';
-    if ((document.body.classList.contains('profile-open') || document.body.classList.contains('inventory-open')) && nav !== 'home') {
+    if (
+      (document.body.classList.contains('profile-open') || document.body.classList.contains('inventory-open')) &&
+      nav !== 'home' &&
+      nav !== 'task'
+    ) {
       return;
     }
     if (nav === 'home') {
@@ -1743,6 +1893,10 @@ navButtons.forEach((btn) => {
       openStore();
       loadStore();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (nav === 'task') {
+      window.location.href = '/tasks.html';
       return;
     }
     closeModal();
@@ -1783,6 +1937,11 @@ if (checkinTrigger) {
     openCheckin();
   });
 }
+if (taskInviteTrigger) {
+  taskInviteTrigger.addEventListener('click', () => {
+    window.location.href = '/tasks.html#invite';
+  });
+}
 if (checkinClose) {
   checkinClose.addEventListener('click', () => {
     closeCheckin();
@@ -1796,6 +1955,80 @@ if (checkinHomeButton) {
 if (agentHomeButton) {
   agentHomeButton.addEventListener('click', () => {
     goHome();
+  });
+}
+if (agentSortButton) {
+  agentSortButton.addEventListener('click', () => {
+    agentSortMode = agentSortMode === 'default' ? 'rating' : agentSortMode === 'rating' ? 'name' : 'default';
+    renderAgents();
+  });
+}
+if (agentPolicyButton) {
+  agentPolicyButton.addEventListener('click', () => {
+    openModal(
+      'Chính sách đại lý',
+      [
+        '- Giao dịch minh bạch, đúng mô tả.',
+        '- Không chia sẻ thông tin đăng nhập cho người khác.',
+        '- Khi có lỗi/hoàn tiền: liên hệ đại lý trong 24h.',
+      ].join('\n')
+    );
+  });
+}
+if (agentContactButton) {
+  agentContactButton.addEventListener('click', () => {
+    openModal('Liên hệ đại lý', 'Chọn 1 đại lý trong danh sách và bấm icon Liên hệ (☎) để xem SĐT.');
+  });
+}
+if (agentUploadButton && agentUploadInput) {
+  agentUploadButton.addEventListener('click', () => {
+    agentUploadInput.value = '';
+    agentUploadInput.click();
+  });
+  agentUploadInput.addEventListener('change', async () => {
+    const file = agentUploadInput.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const rows = parseDelimitedText(text, file.name);
+      const imported = rows.map((row, idx) => mapImportedAgent(row, idx)).filter((a) => a && a.name);
+      if (!imported.length) {
+        openModal('Upload', 'File không có dữ liệu đại lý hợp lệ.');
+        return;
+      }
+      agents = imported;
+      agentsOriginal = [...agents];
+      agentsLoaded = true;
+      try {
+        localStorage.setItem('vme_agents_custom', JSON.stringify(imported));
+      } catch (err) {
+        // ignore
+      }
+      openModal('Upload', `Đã import ${imported.length} đại lý.`);
+      renderAgents();
+    } catch (err) {
+      openModal('Upload', 'Không đọc được file. Vui lòng thử lại.');
+    }
+  });
+}
+if (agentListEl) {
+  agentListEl.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-agent-action]');
+    if (!btn) return;
+    const action = btn.dataset.agentAction;
+    const name = String(btn.dataset.agentName || '').trim() || 'Đại lý';
+    if (action === 'policy') {
+      openModal('Chính sách', `Chính sách áp dụng cho ${name}.\n\n- Bảo mật thông tin.\n- Hỗ trợ nhanh.\n- Giao dịch đúng mô tả.`);
+      return;
+    }
+    if (action === 'contact') {
+      const phone = String(btn.dataset.agentPhone || '').trim();
+      if (phone) {
+        openModal('Liên hệ đại lý', `${name}\nSĐT: ${phone}`);
+      } else {
+        openModal('Liên hệ đại lý', `${name}\nChưa có SĐT. Vui lòng inbox qua chat.`);
+      }
+    }
   });
 }
 if (storeHomeButton) {
@@ -1831,6 +2064,11 @@ if (inventoryCloseButton) {
 if (inventoryHomeButton) {
   inventoryHomeButton.addEventListener('click', () => {
     openProfile();
+  });
+}
+if (chatbotBtn) {
+  chatbotBtn.addEventListener('click', () => {
+    openModal('Chatbot', 'Tính năng Chatbot đang phát triển.\n\nBạn có thể xem thông báo chạy phía trên icon.');
   });
 }
 function handleInventoryTabInteraction(event) {
