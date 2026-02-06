@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cổng Mê Game</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">VME</div>
+        </div>
+        <div class="search">
+          <input id="searchInput" type="text" placeholder="Nhập để tìm kiếm" />
+          <button class="search-btn" type="button" aria-label="Tìm kiếm">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <line x1="16.65" y1="16.65" x2="21" y2="21" />
+            </svg>
+          </button>
+        </div>
+        <button class="menu-btn" type="button" aria-label="Menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </header>
+
+      <section class="banner">
+        <img src="/banner.png" alt="Banner" />
+      </section>
+
+    <nav class="tabs">
+      <button class="tab active" type="button" data-tab="home">Game Hot</button>
+      <button class="tab" type="button" data-tab="h5">Cổng game H5</button>
+      <button class="tab" type="button" data-tab="trade">Thương Mại</button>
+      <button class="tab" type="button" data-tab="rank">Bảng Xếp Hạng</button>
+    </nav>
+
+      <section class="list" id="gameList">
+        <div class="loading">Đang tải dữ liệu...</div>
+      </section>
+    </div>
+
+    <nav class="bottom-nav">
+      <button type="button" class="nav-item">
+        <span class="icon icon-agent"></span>
+        Đại Lý
+      </button>
+      <button type="button" class="nav-item">
+        <span class="icon icon-rank"></span>
+        Xếp Hạng
+      </button>
+      <button type="button" class="nav-item active">
+        <span class="icon icon-home"></span>
+        Home
+      </button>
+      <button type="button" class="nav-item">
+        <span class="icon icon-store"></span>
+        Cửa hàng
+      </button>
+      <button type="button" class="nav-item">
+        <span class="icon icon-task"></span>
+        Nhiệm vụ
+      </button>
+    </nav>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
