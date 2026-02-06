@@ -1,6 +1,7 @@
 const listEl = document.getElementById('gameList');
 const searchInput = document.getElementById('searchInput');
 const tabButtons = Array.from(document.querySelectorAll('.tab'));
+const navButtons = Array.from(document.querySelectorAll('.bottom-nav .nav-item'));
 
 let games = [];
 let activeTab = 'home';
@@ -206,26 +207,27 @@ function createH5Row(game, index) {
   const meta = document.createElement('div');
   meta.className = 'h5-meta';
 
-  const addMeta = (label, value) => {
+  const addMeta = (label, value, options = {}) => {
     if (!value) return;
     const item = document.createElement('div');
-    item.className = 'h5-item';
-
-    const itemLabel = document.createElement('div');
-    itemLabel.className = 'h5-label';
-    itemLabel.textContent = label;
+    item.className = options.noLabel ? 'h5-item value-only' : 'h5-item';
 
     const itemValue = document.createElement('div');
     itemValue.className = 'h5-value';
     itemValue.textContent = value;
 
-    item.appendChild(itemLabel);
+    if (label && !options.noLabel) {
+      const itemLabel = document.createElement('div');
+      itemLabel.className = 'h5-label';
+      itemLabel.textContent = label;
+      item.appendChild(itemLabel);
+    }
     item.appendChild(itemValue);
     meta.appendChild(item);
   };
 
   addMeta('Category', game.category);
-  addMeta('Dung lượng', game.capacity);
+  addMeta('', game.capacity, { noLabel: true });
   addMeta('Ngôn ngữ', game.language);
   addMeta('Đồ họa', game.graphics);
   addMeta('Vote', game.vote);
@@ -301,26 +303,27 @@ function createRankRow(game, index) {
   const meta = document.createElement('div');
   meta.className = 'h5-meta';
 
-  const addMeta = (label, value) => {
+  const addMeta = (label, value, options = {}) => {
     if (!value) return;
     const item = document.createElement('div');
-    item.className = 'h5-item';
-
-    const itemLabel = document.createElement('div');
-    itemLabel.className = 'h5-label';
-    itemLabel.textContent = label;
+    item.className = options.noLabel ? 'h5-item value-only' : 'h5-item';
 
     const itemValue = document.createElement('div');
     itemValue.className = 'h5-value';
     itemValue.textContent = value;
 
-    item.appendChild(itemLabel);
+    if (label && !options.noLabel) {
+      const itemLabel = document.createElement('div');
+      itemLabel.className = 'h5-label';
+      itemLabel.textContent = label;
+      item.appendChild(itemLabel);
+    }
     item.appendChild(itemValue);
     meta.appendChild(item);
   };
 
   addMeta('Category', game.category);
-  addMeta('Dung lượng', game.capacity);
+  addMeta('', game.capacity, { noLabel: true });
   addMeta('Ngôn ngữ', game.language);
   addMeta('Đồ họa', game.graphics);
   addMeta('Vote', game.vote);
@@ -453,6 +456,21 @@ tabButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.tab || 'home';
     setActiveTab(tab);
+  });
+});
+navButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    navButtons.forEach((item) => item.classList.remove('active'));
+    btn.classList.add('active');
+
+    if (btn.dataset.nav === 'home') {
+      setActiveTab('home');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (btn.dataset.nav === 'rank') {
+      setActiveTab('rank');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   });
 });
 modalClose.addEventListener('click', closeModal);

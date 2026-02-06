@@ -10,6 +10,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'dlmau.xlsx');
+const HOT_CSV = process.env.HOT_CSV || '';
+const H5_CSV = process.env.H5_CSV || '';
+const RANK_CSV = process.env.RANK_CSV || '';
 const MEDIA_DIR = process.env.MEDIA_DIR || __dirname;
 
 const ALLOWED_MEDIA_ROOTS = [MEDIA_DIR]
@@ -66,7 +69,7 @@ function pickValue(row, keys) {
   return '';
 }
 
-function mapRowToGame(row, index) {
+function mapRowToGame(row, index, forcedType) {
   const normalized = {};
   for (const [key, value] of Object.entries(row)) {
     normalized[normalizeKey(key)] = value;
@@ -137,8 +140,13 @@ function mapRowToGame(row, index) {
   const platform = pickValue(normalized, ['nen tang', 'nentang', 'platform', 'he dieu hanh', 'device']);
   const tag = pickValue(normalized, ['tag', 'nhan', 'badge', 'hot', 'label']);
   const ctaLink = pickValue(normalized, ['link', 'url', 'href', 'website']) || '#';
-  const isRank = Boolean(rank || installation);
-  const isH5 = !isRank && Boolean(category || capacity || language || graphics || vote || normalized.namegame || normalized.game_image);
+  const inferredIsRank = Boolean(rank || installation);
+  const inferredIsH5 =
+    !inferredIsRank &&
+    Boolean(category || capacity || language || graphics || vote || normalized.namegame || normalized.game_image);
+  const type = forcedType || (inferredIsRank ? 'rank' : inferredIsH5 ? 'h5' : 'home');
+  const isRank = type === 'rank';
+  const isH5 = type === 'h5';
   const ctaText =
     pickValue(normalized, ['nut', 'button', 'action', 'cta', 'truy cap']) ||
     (isRank ? 'Chi tiết' : isH5 ? 'Vào game' : 'Truy cập');
@@ -161,28 +169,121 @@ function mapRowToGame(row, index) {
     tag,
     ctaText,
     ctaLink,
-    type: isRank ? 'rank' : isH5 ? 'h5' : 'home',
+    type,
   };
 }
 
 function readGamesFromExcel() {
   if (!fs.existsSync(DATA_FILE)) return [];
   const workbook = XLSX.readFile(DATA_FILE);
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-  return rows
+  const allRows = [];
+  workbook.SheetNames.forEach((sheetName) => {
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    rows.forEach((row) => allRows.push(row));
+  });
+  return allRows
     .map((row, index) => mapRowToGame(row, index))
     .filter((game) => game && game.title);
 }
 
-let cache = { mtimeMs: 0, games: [] };
+function readRowsFromFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return [];
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.csv' || ext === '.tsv') {
+    const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '');
+    const firstLine = raw.split(/\r?\n/).find((line) => line.trim().length) || '';
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    const semiCount = (firstLine.match(/;/g) || []).length;
+    const delimiter = tabCount >= commaCount && tabCount >= semiCount ? '\t' : semiCount > commaCount ? ';' : ',';
+
+    const workbook = XLSX.read(raw, { type: 'string', FS: delimiter, raw: true });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    return XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  }
+
+  const workbook = XLSX.readFile(filePath);
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  return XLSX.utils.sheet_to_json(sheet, { defval: '' });
+}
+
+function findFirstExisting(paths) {
+  for (const candidate of paths) {
+    if (candidate && fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return '';
+}
+
+const HOT_CSV_PATH =
+  HOT_CSV ||
+  findFirstExisting([
+    path.join(__dirname, 'dlmau - Trang tính1 (1).csv'),
+    path.join(__dirname, 'dlmau - Trang tính1.csv'),
+  ]);
+
+const H5_CSV_PATH =
+  H5_CSV ||
+  findFirstExisting([
+    path.join(__dirname, 'dlmau - Trang tính2 (1).csv'),
+    path.join(__dirname, 'dlmau - Trang tính2.csv'),
+  ]);
+
+const RANK_CSV_PATH =
+  RANK_CSV ||
+  findFirstExisting([
+    path.join(__dirname, 'dlmau - Trang tính3 (1).csv'),
+    path.join(__dirname, 'dlmau - Trang tính3.csv'),
+  ]);
+
+function readGamesFromSources() {
+  const games = [];
+  const hotRows = readRowsFromFile(HOT_CSV_PATH);
+  const h5Rows = readRowsFromFile(H5_CSV_PATH);
+  const rankRows = readRowsFromFile(RANK_CSV_PATH);
+
+  hotRows.forEach((row, index) => games.push(mapRowToGame(row, index, 'home')));
+  h5Rows.forEach((row, index) => games.push(mapRowToGame(row, index, 'h5')));
+  rankRows.forEach((row, index) => games.push(mapRowToGame(row, index, 'rank')));
+
+  if (!games.length) {
+    return readGamesFromExcel();
+  }
+
+  return games.filter((game) => game && game.title);
+}
+
+function computeCacheKey() {
+  const files = [HOT_CSV_PATH, H5_CSV_PATH, RANK_CSV_PATH].filter(Boolean);
+  const parts = [];
+  for (const file of files) {
+    try {
+      const stat = fs.statSync(file);
+      parts.push(`${file}:${stat.mtimeMs}`);
+    } catch (err) {
+      continue;
+    }
+  }
+  if (!parts.length && fs.existsSync(DATA_FILE)) {
+    const stat = fs.statSync(DATA_FILE);
+    parts.push(`${DATA_FILE}:${stat.mtimeMs}`);
+  }
+  return parts.join('|');
+}
+
+let cache = { key: '', games: [] };
 
 function getGames() {
   try {
-    const stat = fs.statSync(DATA_FILE);
-    if (stat.mtimeMs !== cache.mtimeMs) {
-      cache = { mtimeMs: stat.mtimeMs, games: readGamesFromExcel() };
+    const key = computeCacheKey();
+    if (key && key !== cache.key) {
+      cache = { key, games: readGamesFromSources() };
+    } else if (!key) {
+      cache = { key: '', games: [] };
     }
   } catch (err) {
     return [];
