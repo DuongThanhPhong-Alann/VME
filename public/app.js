@@ -88,6 +88,33 @@ function setupProgressiveImage(img, src, { alt, placeholder = '/placeholder.svg'
   img.src = actualSrc;
 }
 
+function setCtaContent(linkEl, label, fallbackLabel) {
+  const value = String(label || fallbackLabel || '').trim();
+  linkEl.textContent = '';
+  linkEl.classList.remove('cta-icon-only');
+  linkEl.removeAttribute('aria-label');
+  linkEl.removeAttribute('title');
+
+  if (value === '->') {
+    linkEl.classList.add('cta-icon-only');
+    const a11y = String(fallbackLabel || 'Mở').trim() || 'Mở';
+    linkEl.setAttribute('aria-label', a11y);
+    linkEl.setAttribute('title', a11y);
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'lucide');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', '#icon-chevron-right');
+    svg.appendChild(use);
+    linkEl.appendChild(svg);
+    return;
+  }
+
+  linkEl.textContent = value;
+}
+
 const CHECKIN_YEAR_RANGE = 3;
 const checkinBaseYear = new Date().getFullYear();
 const checkinMinYear = checkinBaseYear - CHECKIN_YEAR_RANGE;
@@ -466,6 +493,17 @@ function formatChipNumber(value) {
   return raw;
 }
 
+function formatVnd(value) {
+  if (!value) return '';
+  const raw = String(value).trim();
+  if (!raw) return '';
+  if (/(vnđ|vnd|\bđ\b|₫)/i.test(raw)) return raw;
+  const normalized = formatChipNumber(raw);
+  if (!normalized) return '';
+  if (/[a-zA-ZÀ-ỹ]/.test(normalized)) return normalized;
+  return `${normalized} vnđ`;
+}
+
 function parseInstallations(raw) {
   const text = String(raw || '').trim();
   if (!text) return [];
@@ -562,7 +600,7 @@ function createRow(game, index) {
 
   const cta = document.createElement('a');
   cta.className = 'game-cta';
-  cta.textContent = game.ctaText || 'Truy cập';
+  setCtaContent(cta, game.ctaText, 'Truy cập');
   cta.href = game.ctaLink || '#';
   cta.target = '_blank';
   cta.rel = 'noreferrer';
@@ -628,7 +666,7 @@ function createH5Row(game, index) {
 
   const cta = document.createElement('a');
   cta.className = 'game-cta';
-  cta.textContent = game.ctaText || 'Vào game';
+  setCtaContent(cta, game.ctaText, 'Vào game');
   cta.href = game.ctaLink || '#';
   cta.target = '_blank';
   cta.rel = 'noreferrer';
@@ -710,7 +748,7 @@ function createRankRow(game, index) {
   addChip(game.language);
   addChip(game.graphics);
   addChip(game.vote);
-  addChip(formatChipNumber(game.money));
+  addChip(formatVnd(game.money));
 
   if (meta.children.length) {
     info.appendChild(meta);
@@ -739,7 +777,7 @@ function createRankRow(game, index) {
 
   const cta = document.createElement('a');
   cta.className = 'game-cta';
-  cta.textContent = game.ctaText || 'Chi tiết';
+  setCtaContent(cta, game.ctaText, 'Chi tiết');
   cta.href = game.ctaLink || '#';
   cta.target = '_blank';
   cta.rel = 'noreferrer';
@@ -753,6 +791,70 @@ function createRankRow(game, index) {
   row.appendChild(cta);
 
   return row;
+}
+
+function createRankPodiumCard(entry, variant) {
+  const card = document.createElement('article');
+  card.className = `podium-card podium-${variant}`;
+
+  const imageWrap = document.createElement('div');
+  imageWrap.className = 'podium-image';
+
+  const img = document.createElement('img');
+  setupProgressiveImage(img, entry.game.image, { alt: entry.game.title || 'Top' });
+  imageWrap.appendChild(img);
+
+  const badge = document.createElement('div');
+  badge.className = 'podium-badge';
+  badge.textContent = entry.rankNum ? `TOP ${entry.rankNum}` : 'TOP';
+
+  const name = document.createElement('div');
+  name.className = 'podium-name';
+  name.textContent = entry.game.title || '---';
+
+  const money = document.createElement('div');
+  money.className = 'podium-money';
+  money.textContent = formatVnd(entry.game.money) || '';
+
+  card.appendChild(badge);
+  card.appendChild(imageWrap);
+  card.appendChild(name);
+  if (money.textContent) card.appendChild(money);
+
+  return card;
+}
+
+function createRankPodiumSection(entries) {
+  const frame = document.createElement('section');
+  frame.className = 'rank-top-frame';
+
+  const title = document.createElement('div');
+  title.className = 'rank-top-title';
+  title.textContent = 'Top 3';
+
+  const podium = document.createElement('div');
+  podium.className = 'rank-podium';
+
+  const slots = [null, null, null]; // left, center, right
+  const fallback = [];
+  entries.forEach((entry) => {
+    if (entry.rankNum === 1 && !slots[1]) slots[1] = entry;
+    else if (entry.rankNum === 2 && !slots[0]) slots[0] = entry;
+    else if (entry.rankNum === 3 && !slots[2]) slots[2] = entry;
+    else fallback.push(entry);
+  });
+  for (const index of [1, 0, 2]) {
+    if (slots[index]) continue;
+    slots[index] = fallback.shift() || null;
+  }
+
+  if (slots[0]) podium.appendChild(createRankPodiumCard(slots[0], 'left'));
+  if (slots[1]) podium.appendChild(createRankPodiumCard(slots[1], 'center'));
+  if (slots[2]) podium.appendChild(createRankPodiumCard(slots[2], 'right'));
+
+  frame.appendChild(title);
+  frame.appendChild(podium);
+  return frame;
 }
 
 function setActiveTab(tab) {
@@ -795,19 +897,16 @@ function goRank() {
 
 function renderList() {
   const term = searchInput.value.trim().toLowerCase();
-  const filtered = games.filter((game) => {
-    if (activeTab === 'h5') {
-      if (game.type !== 'h5') return false;
-    } else if (activeTab === 'rank') {
-      if (game.type !== 'rank') return false;
-    } else if (activeTab === 'home') {
-      if (game.type !== 'home') return false;
-    } else if (activeTab === 'trade') {
-      return false;
-    }
-    const title = String(game.title || '').toLowerCase();
-    return title.includes(term);
+  const base = games.filter((game) => {
+    if (activeTab === 'h5') return game.type === 'h5';
+    if (activeTab === 'rank') return game.type === 'rank';
+    if (activeTab === 'home') return game.type === 'home';
+    if (activeTab === 'trade') return false;
+    return true;
   });
+  const filtered = term
+    ? base.filter((game) => String(game.title || '').toLowerCase().includes(term))
+    : base;
 
   listEl.innerHTML = '';
 
@@ -827,8 +926,36 @@ function renderList() {
     return;
   }
 
-  const renderer =
-    activeTab === 'rank' ? createRankRow : activeTab === 'h5' ? createH5Row : createRow;
+  if (activeTab === 'rank') {
+    const ranked = filtered
+      .map((game, idx) => {
+        const inferredRank = String(game.rank || '').trim() || String(idx + 1);
+        const rankNum = Number(String(inferredRank).replace(/[^0-9]/g, '')) || idx + 1;
+        return { game, inferredRank, rankNum };
+      })
+      .sort((a, b) => a.rankNum - b.rankNum);
+
+    if (!term) {
+      const top = ranked.slice(0, 3);
+      const rest = ranked.slice(3);
+
+      if (top.length) {
+        listEl.appendChild(createRankPodiumSection(top));
+      }
+
+      rest.forEach((entry) => {
+        listEl.appendChild(createRankRow(entry.game, entry.rankNum - 1));
+      });
+      return;
+    }
+
+    ranked.forEach((entry) => {
+      listEl.appendChild(createRankRow(entry.game, entry.rankNum - 1));
+    });
+    return;
+  }
+
+  const renderer = activeTab === 'h5' ? createH5Row : createRow;
   filtered.forEach((game, index) => {
     listEl.appendChild(renderer(game, index));
   });
