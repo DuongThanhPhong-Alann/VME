@@ -25,8 +25,6 @@ const agentListEl = document.getElementById('agentList');
 const agentHomeButton = document.querySelector('[data-agent-home]');
 const agentUploadButton = document.querySelector('[data-agent-upload]');
 const agentSortButton = document.querySelector('[data-agent-sort]');
-const agentPolicyButton = document.querySelector('[data-agent-policy]');
-const agentContactButton = document.querySelector('[data-agent-contact]');
 const agentUploadInput = document.getElementById('agentUploadInput');
 const storeView = document.getElementById('storeView');
 const storeGridEl = document.getElementById('storeGrid');
@@ -48,6 +46,7 @@ const inventoryTabs = Array.from(document.querySelectorAll('.inventory-tab'));
 const inventoryCloseButton = document.querySelector('.inventory-close');
 const inventoryHomeButton = document.querySelector('[data-inventory-home]');
 const chatbotBtn = document.getElementById('chatbotBtn');
+const siteTickerText = document.getElementById('siteTickerText');
 
 const LAZY_DATA_URL_THRESHOLD = 20_000;
 let lazyImageObserver = null;
@@ -209,6 +208,30 @@ let storeItems = [];
 let storeLoaded = false;
 let profilePlayedGames = [];
 let agentSortMode = 'default'; // default | rating | name
+
+const SITE_NOTICES = [
+  'Chúc mừng! Nạp lần đầu nhận quà hấp dẫn.',
+  'Chúc mừng! Hoàn thành nhiệm vụ hằng ngày để nhận Tiên ngọc.',
+  'Chúc mừng! Mời bạn bè nhập mã mời để nhận thưởng.',
+  'Chúc mừng! Điểm danh mỗi ngày để tích điểm đổi quà.',
+  'Chúc mừng! Chơi game 30 phút nhận thưởng ngay.',
+  'Chúc mừng! Top bảng xếp hạng nhận quà tuần.',
+  'Chúc mừng! Cửa hàng vừa cập nhật vật phẩm mới.',
+  'Chúc mừng! Đại lý uy tín hỗ trợ nhanh 24/7.',
+  'Chúc mừng! Săn event để nhận rương quà.',
+  'Chúc mừng! Bảo mật tài khoản để chơi an toàn.',
+];
+
+let siteNoticeIndex = 0;
+function rotateSiteNotice() {
+  if (!siteTickerText) return;
+  siteNoticeIndex = (siteNoticeIndex + 1) % SITE_NOTICES.length;
+  siteTickerText.classList.add('restart');
+  siteTickerText.textContent = SITE_NOTICES[siteNoticeIndex];
+  // restart CSS marquee animation
+  siteTickerText.offsetWidth;
+  siteTickerText.classList.remove('restart');
+}
 
 const modalBackdrop = document.createElement('div');
 modalBackdrop.className = 'modal-backdrop';
@@ -1179,10 +1202,23 @@ function renderAgents() {
     const rowActions = document.createElement('div');
     rowActions.className = 'agent-row-actions';
 
+    const messageBtn = document.createElement('button');
+    messageBtn.className = 'agent-row-btn';
+    messageBtn.type = 'button';
+    messageBtn.setAttribute('aria-label', 'Nhắn tin đại lý');
+    messageBtn.setAttribute('title', 'Nhắn tin đại lý');
+    messageBtn.dataset.agentAction = 'message';
+    messageBtn.dataset.agentName = agent.name || '';
+    messageBtn.innerHTML = `
+      <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+        <use href="#icon-message-square"></use>
+      </svg>
+    `;
+
     const policyBtn = document.createElement('button');
     policyBtn.className = 'agent-row-btn';
     policyBtn.type = 'button';
-    policyBtn.setAttribute('aria-label', 'Chính sách');
+    policyBtn.setAttribute('aria-label', 'Chính sách đại lý');
     policyBtn.setAttribute('title', 'Chính sách');
     policyBtn.dataset.agentAction = 'policy';
     policyBtn.dataset.agentName = agent.name || '';
@@ -1206,6 +1242,7 @@ function renderAgents() {
       </svg>
     `;
 
+    rowActions.appendChild(messageBtn);
     rowActions.appendChild(policyBtn);
     rowActions.appendChild(contactBtn);
 
@@ -1869,7 +1906,8 @@ navButtons.forEach((btn) => {
     if (
       (document.body.classList.contains('profile-open') || document.body.classList.contains('inventory-open')) &&
       nav !== 'home' &&
-      nav !== 'task'
+      nav !== 'task' &&
+      nav !== 'rank'
     ) {
       return;
     }
@@ -1878,7 +1916,7 @@ navButtons.forEach((btn) => {
       return;
     }
     if (nav === 'rank') {
-      goRank();
+      window.location.href = '/rank.html';
       return;
     }
     if (nav === 'agent') {
@@ -1963,23 +2001,6 @@ if (agentSortButton) {
     renderAgents();
   });
 }
-if (agentPolicyButton) {
-  agentPolicyButton.addEventListener('click', () => {
-    openModal(
-      'Chính sách đại lý',
-      [
-        '- Giao dịch minh bạch, đúng mô tả.',
-        '- Không chia sẻ thông tin đăng nhập cho người khác.',
-        '- Khi có lỗi/hoàn tiền: liên hệ đại lý trong 24h.',
-      ].join('\n')
-    );
-  });
-}
-if (agentContactButton) {
-  agentContactButton.addEventListener('click', () => {
-    openModal('Liên hệ đại lý', 'Chọn 1 đại lý trong danh sách và bấm icon Liên hệ (☎) để xem SĐT.');
-  });
-}
 if (agentUploadButton && agentUploadInput) {
   agentUploadButton.addEventListener('click', () => {
     agentUploadInput.value = '';
@@ -2017,8 +2038,15 @@ if (agentListEl) {
     if (!btn) return;
     const action = btn.dataset.agentAction;
     const name = String(btn.dataset.agentName || '').trim() || 'Đại lý';
+    if (action === 'message') {
+      openModal('Nhắn tin', `Chat với ${name} đang phát triển.\n\nBạn có thể vào menu “Phòng Chat” để trải nghiệm.`);
+      return;
+    }
     if (action === 'policy') {
-      openModal('Chính sách', `Chính sách áp dụng cho ${name}.\n\n- Bảo mật thông tin.\n- Hỗ trợ nhanh.\n- Giao dịch đúng mô tả.`);
+      openModal(
+        'Chính sách đại lý',
+        `Áp dụng cho ${name}.\n\n- Giao dịch minh bạch, đúng mô tả.\n- Không chia sẻ tài khoản/mật khẩu.\n- Khi có lỗi/hoàn tiền: liên hệ trong 24h.`
+      );
       return;
     }
     if (action === 'contact') {
@@ -2144,3 +2172,7 @@ document.addEventListener('keydown', (event) => {
 loadGames();
 loadProfileSummary();
 setSearchPlaceholder(getActiveContext());
+if (siteTickerText) {
+  siteTickerText.textContent = SITE_NOTICES[0];
+  setInterval(rotateSiteNotice, 10_000);
+}

@@ -100,6 +100,9 @@
         <path d="M12 2v20" />
         <path d="M16 6l-4-4-4 4" />
       </symbol>
+      <symbol id="icon-funnel" viewBox="0 0 24 24">
+        <path d="M3 4h18l-7 8v6l-4 2v-8L3 4z" />
+      </symbol>
     </svg>
 
     <div class="page">
@@ -116,21 +119,21 @@
           </button>
         </div>
         <div class="user-wrap" aria-label="Tài khoản">
-          <button class="pro5-btn" id="pro5Btn" type="button" aria-label="Pro5">
+          <div class="balance-pill" aria-label="Số dư">
+            <span class="balance-value" id="balanceValue">10.000</span>
+            <span class="balance-unit">tiên ngọc</span>
+          </div>
+          <button class="pro5-btn" id="pro5Btn" type="button" aria-label="Xin Chào">
             <span class="pro5-icon" aria-hidden="true">
               <svg class="lucide" viewBox="0 0 24 24">
                 <use href="#icon-user" />
               </svg>
             </span>
             <span class="pro5-text">
-              <span class="pro5-label">pro5</span>
-              <span class="pro5-name" id="pro5Name">Anh Quân</span>
+              <span class="pro5-label">Xin Chào</span>
+              <span class="pro5-name" id="pro5Name">Hoàng Huy</span>
             </span>
           </button>
-          <div class="balance-pill" aria-label="Số dư">
-            <span class="balance-value" id="balanceValue">10.000</span>
-            <span class="balance-unit">tiên ngọc</span>
-          </div>
         </div>
         <div class="menu-wrap">
           <button
@@ -222,6 +225,12 @@
         </div>
       </header>
 
+      <section class="site-ticker" aria-live="polite">
+        <div class="site-ticker-track">
+          <span class="site-ticker-text" id="siteTickerText">Chúc mừng! Nạp lần đầu nhận quà hấp dẫn.</span>
+        </div>
+      </section>
+
       <section class="banner">
         <img src="/banner.jpg" alt="Banner" />
       </section>
@@ -229,8 +238,6 @@
 	    <nav class="tabs">
 	      <button class="tab active" type="button" data-tab="home">Game Hot</button>
 	      <button class="tab" type="button" data-tab="h5">Cổng game H5</button>
-	      <button class="tab" type="button" data-tab="trade">Thương Mại</button>
-	      <button class="tab" type="button" data-tab="rank">Bảng Xếp Hạng</button>
 	    </nav>
 
 	      <section class="agent-view" id="agentView" aria-hidden="true">
@@ -245,17 +252,7 @@
                 </button>
                 <button class="agent-action" type="button" data-agent-sort aria-label="Sort" title="Sort">
                   <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#icon-arrow-up-down" />
-                  </svg>
-                </button>
-                <button class="agent-action" type="button" data-agent-policy aria-label="Chính sách" title="Chính sách">
-                  <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#icon-book" />
-                  </svg>
-                </button>
-                <button class="agent-action" type="button" data-agent-contact aria-label="Liên hệ" title="Liên hệ">
-                  <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="#icon-phone" />
+                    <use href="#icon-funnel" />
                   </svg>
                 </button>
 	              <button class="agent-home" type="button" data-agent-home aria-label="Trang chủ" title="Trang chủ">

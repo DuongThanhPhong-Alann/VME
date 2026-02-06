@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bảng Xếp Hạng</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
+      <symbol id="icon-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </symbol>
+      <symbol id="icon-home" viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </symbol>
+      <symbol id="icon-chevron-right" viewBox="0 0 24 24">
+        <polyline points="9 18 15 12 9 6" />
+      </symbol>
+      <symbol id="icon-star" viewBox="0 0 24 24">
+        <path
+          d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"
+        />
+      </symbol>
+    </svg>
+
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <a class="logo" href="/" aria-label="Trang chủ">VME</a>
+        </div>
+        <div class="search">
+          <input id="rankSearchInput" type="text" placeholder="Tìm bảng xếp hạng tháng..." />
+          <button class="search-btn" type="button" aria-label="Tìm kiếm">
+            <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+              <use href="#icon-search" />
+            </svg>
+          </button>
+        </div>
+        <div class="menu-wrap" style="display: flex; gap: 10px;">
+          <a class="menu-btn" href="/" aria-label="Trang chủ" title="Trang chủ" style="text-decoration:none;">
+            <svg class="lucide" viewBox="0 0 24 24" aria-hidden="true">
+              <use href="#icon-home" />
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="Tab xếp hạng">
+        <button class="tab active" type="button" data-rank-tab="month">Tháng</button>
+        <button class="tab" type="button" data-rank-tab="game">BXH game</button>
+        <button class="tab" type="button" data-rank-tab="agent">Đại lý</button>
+      </nav>
+
+      <section class="rank-filters" id="rankFilters" aria-label="Bộ lọc">
+        <div class="rank-filter">
+          <div class="rank-filter-label" id="rankFilterLabel">Chọn game</div>
+          <select class="rank-filter-select" id="rankGameSelect" aria-label="Chọn game">
+            <option value="__all__">Tất cả game</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="list rank-list" id="rankList">
+        <div class="loading">Đang tải dữ liệu...</div>
+      </section>
+    </div>
+
+    <script src="/rank.js"></script>
+  </body>
+</html>
