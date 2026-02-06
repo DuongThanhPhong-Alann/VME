@@ -18,6 +18,7 @@ const checkinMonthBtn = document.querySelector('.checkin-month-btn');
 const checkinPicker = document.getElementById('checkinPicker');
 const checkinPickerGrid = document.getElementById('checkinPickerGrid');
 const checkinNavButtons = Array.from(document.querySelectorAll('[data-checkin-nav]'));
+const checkinHomeButton = document.querySelector('[data-checkin-home]');
 
 const CHECKIN_YEAR_RANGE = 3;
 const checkinBaseYear = new Date().getFullYear();
@@ -370,42 +371,23 @@ function createH5Row(game, index) {
 
   titleRow.appendChild(title);
 
-  if (game.category) {
-    const badge = document.createElement('span');
-    badge.className = 'badge badge-h5';
-    badge.textContent = game.category;
-    titleRow.appendChild(badge);
-  }
-
   info.appendChild(titleRow);
 
   const meta = document.createElement('div');
-  meta.className = 'h5-meta';
+  meta.className = 'h5-meta h5-chips';
 
-  const addMeta = (label, value, options = {}) => {
+  const addChip = (value) => {
     if (!value) return;
-    const item = document.createElement('div');
-    item.className = options.noLabel ? 'h5-item value-only' : 'h5-item';
-
-    const itemValue = document.createElement('div');
-    itemValue.className = 'h5-value';
-    itemValue.textContent = value;
-
-    if (label && !options.noLabel) {
-      const itemLabel = document.createElement('div');
-      itemLabel.className = 'h5-label';
-      itemLabel.textContent = label;
-      item.appendChild(itemLabel);
-    }
-    item.appendChild(itemValue);
-    meta.appendChild(item);
+    const chip = document.createElement('span');
+    chip.className = 'h5-chip';
+    chip.textContent = String(value).trim();
+    meta.appendChild(chip);
   };
 
-  addMeta('Category', game.category);
-  addMeta('', game.capacity, { noLabel: true });
-  addMeta('Ngôn ngữ', game.language);
-  addMeta('Đồ họa', game.graphics);
-  addMeta('Vote', game.vote);
+  addChip(game.capacity);
+  addChip(game.language);
+  addChip(game.graphics);
+  addChip(game.vote);
 
   if (meta.children.length) {
     info.appendChild(meta);
@@ -476,32 +458,21 @@ function createRankRow(game, index) {
   info.appendChild(titleRow);
 
   const meta = document.createElement('div');
-  meta.className = 'h5-meta';
+  meta.className = 'h5-meta h5-chips';
 
-  const addMeta = (label, value, options = {}) => {
+  const addChip = (value) => {
     if (!value) return;
-    const item = document.createElement('div');
-    item.className = options.noLabel ? 'h5-item value-only' : 'h5-item';
-
-    const itemValue = document.createElement('div');
-    itemValue.className = 'h5-value';
-    itemValue.textContent = value;
-
-    if (label && !options.noLabel) {
-      const itemLabel = document.createElement('div');
-      itemLabel.className = 'h5-label';
-      itemLabel.textContent = label;
-      item.appendChild(itemLabel);
-    }
-    item.appendChild(itemValue);
-    meta.appendChild(item);
+    const chip = document.createElement('span');
+    chip.className = 'h5-chip';
+    chip.textContent = String(value).trim();
+    meta.appendChild(chip);
   };
 
-  addMeta('Category', game.category);
-  addMeta('', game.capacity, { noLabel: true });
-  addMeta('Ngôn ngữ', game.language);
-  addMeta('Đồ họa', game.graphics);
-  addMeta('Vote', game.vote);
+  addChip(game.category);
+  addChip(game.capacity);
+  addChip(game.language);
+  addChip(game.graphics);
+  addChip(game.vote);
 
   if (meta.children.length) {
     info.appendChild(meta);
@@ -554,6 +525,30 @@ function setActiveTab(tab) {
   listEl.classList.toggle('h5-list', tab === 'h5');
   listEl.classList.toggle('rank-list', tab === 'rank');
   renderList();
+}
+
+function setActiveNav(nav) {
+  navButtons.forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.nav === nav);
+  });
+}
+
+function goHome() {
+  closeModal();
+  closeMenu();
+  closeCheckin();
+  setActiveNav('home');
+  setActiveTab('home');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goRank() {
+  closeModal();
+  closeMenu();
+  closeCheckin();
+  setActiveNav('rank');
+  setActiveTab('rank');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function renderList() {
@@ -635,17 +630,19 @@ tabButtons.forEach((btn) => {
 });
 navButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
-    navButtons.forEach((item) => item.classList.remove('active'));
-    btn.classList.add('active');
-
-    if (btn.dataset.nav === 'home') {
-      setActiveTab('home');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    const nav = btn.dataset.nav || 'home';
+    if (nav === 'home') {
+      goHome();
+      return;
     }
-    if (btn.dataset.nav === 'rank') {
-      setActiveTab('rank');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (nav === 'rank') {
+      goRank();
+      return;
     }
+    closeModal();
+    closeMenu();
+    closeCheckin();
+    setActiveNav(nav);
   });
 });
 if (menuBtn && menuPanel) {
@@ -679,6 +676,11 @@ if (checkinTrigger) {
 if (checkinClose) {
   checkinClose.addEventListener('click', () => {
     closeCheckin();
+  });
+}
+if (checkinHomeButton) {
+  checkinHomeButton.addEventListener('click', () => {
+    goHome();
   });
 }
 if (checkinMonthBtn && checkinPicker) {
