@@ -105,11 +105,22 @@ function mapRowToGame(row, index) {
     'game_image',
     'game image',
   ]);
+  const rank = pickValue(normalized, ['rank', 'stt', 'thu hang', 'thu hang', 'xep hang', 'xephang']);
   const category = pickValue(normalized, ['category', 'the loai', 'theloai']);
   const capacity = pickValue(normalized, ['capacity', 'dung luong', 'dungluong']);
   const language = pickValue(normalized, ['language', 'ngon ngu', 'ngonngu']);
   const graphics = pickValue(normalized, ['graphics', 'do hoa', 'dohoa']);
   const vote = pickValue(normalized, ['vote', 'danh gia', 'danhgia', 'rating']);
+  const installation = pickValue(normalized, [
+    'installation_file',
+    'installation file',
+    'install',
+    'tai game',
+    'tai xuong',
+    'file cai dat',
+    'cai dat',
+    'download',
+  ]);
   const slogan = pickValue(normalized, ['slogan', 'tagline', 'khau hieu', 'khau hieu game']);
   const description = pickValue(normalized, [
     'mo ta',
@@ -126,17 +137,22 @@ function mapRowToGame(row, index) {
   const platform = pickValue(normalized, ['nen tang', 'nentang', 'platform', 'he dieu hanh', 'device']);
   const tag = pickValue(normalized, ['tag', 'nhan', 'badge', 'hot', 'label']);
   const ctaLink = pickValue(normalized, ['link', 'url', 'href', 'website']) || '#';
-  const isH5 = Boolean(category || capacity || language || graphics || vote || normalized.namegame || normalized.game_image);
-  const ctaText = pickValue(normalized, ['nut', 'button', 'action', 'cta', 'truy cap']) || (isH5 ? 'Vào game' : 'Truy cập');
+  const isRank = Boolean(rank || installation);
+  const isH5 = !isRank && Boolean(category || capacity || language || graphics || vote || normalized.namegame || normalized.game_image);
+  const ctaText =
+    pickValue(normalized, ['nut', 'button', 'action', 'cta', 'truy cap']) ||
+    (isRank ? 'Chi tiết' : isH5 ? 'Vào game' : 'Truy cập');
 
   return {
     title,
     image: imageRaw ? toMediaUrl(imageRaw) : '/placeholder.svg',
+    rank,
     category,
     capacity,
     language,
     graphics,
     vote,
+    installation,
     slogan,
     description,
     subtitle,
@@ -145,7 +161,7 @@ function mapRowToGame(row, index) {
     tag,
     ctaText,
     ctaLink,
-    type: isH5 ? 'h5' : 'home',
+    type: isRank ? 'rank' : isH5 ? 'h5' : 'home',
   };
 }
 

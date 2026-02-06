@@ -46,6 +46,28 @@ function formatViews(value) {
   return raw;
 }
 
+function parseInstallations(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return [];
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^([^:]+):\s*(.+)$/);
+      if (match) {
+        return { label: match[1].trim(), url: match[2].trim() };
+      }
+      return { label: 'Link', url: line };
+    });
+}
+
+function isValidUrl(url) {
+  if (!url) return false;
+  if (/^javascript:/i.test(url)) return false;
+  return /^https?:\/\//i.test(url) || url.startsWith('/');
+}
+
 function createRow(game, index) {
   const row = document.createElement('article');
   row.className = 'game-row';
@@ -230,12 +252,129 @@ function createH5Row(game, index) {
   return row;
 }
 
+function createRankRow(game, index) {
+  const row = document.createElement('article');
+  row.className = 'game-row rank-row';
+  row.style.setProperty('--delay', `${index * 60}ms`);
+
+  const imageWrap = document.createElement('div');
+  imageWrap.className = 'game-image';
+
+  const img = document.createElement('img');
+  img.src = game.image || '/placeholder.svg';
+  img.alt = game.title || 'Rank Game';
+  img.addEventListener('error', () => {
+    if (img.src.includes('placeholder.svg')) return;
+    img.src = '/placeholder.svg';
+  });
+  imageWrap.appendChild(img);
+
+  if (game.rank) {
+    const rankBadge = document.createElement('div');
+    rankBadge.className = 'rank-badge';
+    rankBadge.textContent = String(game.rank).trim();
+    imageWrap.appendChild(rankBadge);
+  }
+
+  const info = document.createElement('div');
+  info.className = 'game-info';
+
+  const titleRow = document.createElement('div');
+  titleRow.className = 'game-title';
+
+  const title = document.createElement('h3');
+  title.textContent = game.title || 'Rank Game';
+  title.style.margin = '0';
+  title.style.fontSize = '18px';
+  title.style.fontWeight = '600';
+  titleRow.appendChild(title);
+
+  if (game.category) {
+    const badge = document.createElement('span');
+    badge.className = 'badge badge-h5';
+    badge.textContent = game.category;
+    titleRow.appendChild(badge);
+  }
+
+  info.appendChild(titleRow);
+
+  const meta = document.createElement('div');
+  meta.className = 'h5-meta';
+
+  const addMeta = (label, value) => {
+    if (!value) return;
+    const item = document.createElement('div');
+    item.className = 'h5-item';
+
+    const itemLabel = document.createElement('div');
+    itemLabel.className = 'h5-label';
+    itemLabel.textContent = label;
+
+    const itemValue = document.createElement('div');
+    itemValue.className = 'h5-value';
+    itemValue.textContent = value;
+
+    item.appendChild(itemLabel);
+    item.appendChild(itemValue);
+    meta.appendChild(item);
+  };
+
+  addMeta('Category', game.category);
+  addMeta('Dung lượng', game.capacity);
+  addMeta('Ngôn ngữ', game.language);
+  addMeta('Đồ họa', game.graphics);
+  addMeta('Vote', game.vote);
+
+  if (meta.children.length) {
+    info.appendChild(meta);
+  }
+
+  const installs = parseInstallations(game.installation);
+  if (installs.length) {
+    const installWrap = document.createElement('div');
+    installWrap.className = 'install-list';
+    installs.forEach((item) => {
+      const btn = document.createElement('a');
+      btn.className = 'install-btn';
+      btn.textContent = item.label;
+      if (isValidUrl(item.url)) {
+        btn.href = item.url;
+        btn.target = '_blank';
+        btn.rel = 'noreferrer';
+      } else {
+        btn.classList.add('disabled');
+        btn.href = '#';
+      }
+      installWrap.appendChild(btn);
+    });
+    info.appendChild(installWrap);
+  }
+
+  const cta = document.createElement('a');
+  cta.className = 'game-cta';
+  cta.textContent = game.ctaText || 'Chi tiết';
+  cta.href = game.ctaLink || '#';
+  cta.target = '_blank';
+  cta.rel = 'noreferrer';
+
+  if (!game.ctaLink || game.ctaLink === '#') {
+    cta.classList.add('disabled');
+  }
+
+  row.appendChild(imageWrap);
+  row.appendChild(info);
+  row.appendChild(cta);
+
+  return row;
+}
+
 function setActiveTab(tab) {
   activeTab = tab;
   tabButtons.forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
   listEl.classList.toggle('h5-list', tab === 'h5');
+  listEl.classList.toggle('rank-list', tab === 'rank');
   renderList();
 }
 
@@ -244,7 +383,11 @@ function renderList() {
   const filtered = games.filter((game) => {
     if (activeTab === 'h5') {
       if (game.type !== 'h5') return false;
-    } else if (game.type === 'h5') {
+    } else if (activeTab === 'rank') {
+      if (game.type !== 'rank') return false;
+    } else if (activeTab === 'home') {
+      if (game.type !== 'home') return false;
+    } else if (activeTab === 'trade') {
       return false;
     }
     const title = String(game.title || '').toLowerCase();
@@ -256,12 +399,21 @@ function renderList() {
   if (!filtered.length) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = activeTab === 'h5' ? 'Chưa có game H5.' : 'Không có game phù hợp.';
+    if (activeTab === 'rank') {
+      empty.textContent = 'Chưa có dữ liệu bảng xếp hạng.';
+    } else if (activeTab === 'h5') {
+      empty.textContent = 'Chưa có game H5.';
+    } else if (activeTab === 'trade') {
+      empty.textContent = 'Chưa có dữ liệu thương mại.';
+    } else {
+      empty.textContent = 'Không có game phù hợp.';
+    }
     listEl.appendChild(empty);
     return;
   }
 
-  const renderer = activeTab === 'h5' ? createH5Row : createRow;
+  const renderer =
+    activeTab === 'rank' ? createRankRow : activeTab === 'h5' ? createH5Row : createRow;
   filtered.forEach((game, index) => {
     listEl.appendChild(renderer(game, index));
   });
@@ -272,12 +424,19 @@ async function loadGames() {
     const response = await fetch('/api/games');
     const data = await response.json();
     games = Array.isArray(data.games) ? data.games : [];
-    if (games.length && games.every((game) => game.type === 'h5')) {
-      activeTab = 'h5';
+    if (games.length) {
+      if (games.every((game) => game.type === 'rank')) {
+        activeTab = 'rank';
+      } else if (games.every((game) => game.type === 'h5')) {
+        activeTab = 'h5';
+      } else {
+        activeTab = 'home';
+      }
       tabButtons.forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.tab === 'h5');
+        btn.classList.toggle('active', btn.dataset.tab === activeTab);
       });
-      listEl.classList.add('h5-list');
+      listEl.classList.toggle('h5-list', activeTab === 'h5');
+      listEl.classList.toggle('rank-list', activeTab === 'rank');
     }
     renderList();
   } catch (error) {
