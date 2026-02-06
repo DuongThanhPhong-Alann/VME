@@ -196,6 +196,11 @@ body.agent-open .agent-view {
   display: block;
 }
 
+body.agent-open .topbar {
+  position: static;
+  top: auto;
+}
+
 body.agent-open .banner,
 body.agent-open .tabs,
 body.agent-open .list,
@@ -2829,7 +2834,7 @@ body.modal-open .bottom-nav {
 @media (max-width: 760px) {
   .topbar {
     display: grid;
-    grid-template-columns: auto 1fr 40px;
+    grid-template-columns: 168px 1fr 40px;
     grid-template-areas:
       "spacer brand menu"
       "search search search";
@@ -2846,14 +2851,27 @@ body.modal-open .bottom-nav {
   .user-wrap {
     grid-area: spacer;
     justify-self: start;
+    max-width: 168px;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .pro5-text {
-    display: none;
+    display: flex;
   }
 
   .pro5-btn {
     padding: 8px;
+    min-width: 0;
+  }
+
+  .pro5-label {
+    display: none;
+  }
+
+  .pro5-name {
+    max-width: 72px;
+    font-size: 12px;
   }
 
   .pro5-icon {
@@ -2864,6 +2882,15 @@ body.modal-open .bottom-nav {
   .balance-pill {
     padding: 8px 10px;
     border-radius: 14px;
+    min-width: 0;
+    max-width: 92px;
+    overflow: hidden;
+  }
+
+  .balance-value {
+    font-size: 12px;
+    text-overflow: ellipsis;
+    overflow: hidden;
   }
 
   .balance-unit {
@@ -2876,10 +2903,12 @@ body.modal-open .bottom-nav {
     justify-self: center;
     align-items: center;
     text-align: center;
+    overflow: hidden;
   }
 
   .logo {
     text-align: center;
+    font-size: 20px;
   }
 
   .search {
@@ -2959,6 +2988,12 @@ body.modal-open .bottom-nav {
   .bottom-nav {
     flex-wrap: wrap;
     gap: 6px;
+  }
+}
+
+@media (max-width: 420px) {
+  .balance-pill {
+    display: none;
   }
 }
 
