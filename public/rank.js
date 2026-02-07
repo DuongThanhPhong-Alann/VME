@@ -475,21 +475,19 @@ function setSelectOptions(titles, selected) {
 
 function refreshFilterForActiveTab() {
   if (!rankFilters) return;
-  const show = activeTab === 'month' || activeTab === 'game';
+  // Chỉ hiển thị bộ lọc game ở tab "BXH game".
+  // Tab "Tháng" không dùng filter-select theo yêu cầu.
+  const show = activeTab === 'game';
   rankFilters.hidden = !show;
   if (!show) return;
 
-  if (activeTab === 'month') {
-    if (rankFilterLabel) rankFilterLabel.textContent = 'Chọn game (Hot)';
-    setSelectOptions(monthGameTitles, monthSelectedTitle);
-  } else {
-    if (rankFilterLabel) rankFilterLabel.textContent = 'Chọn game';
-    setSelectOptions(gameTitles, gameSelectedTitle);
-  }
+  if (rankFilterLabel) rankFilterLabel.textContent = 'Chọn game';
+  setSelectOptions(gameTitles, gameSelectedTitle);
 }
 
 function setActiveTab(tab) {
   activeTab = tab === 'agent' ? 'agent' : tab === 'game' ? 'game' : 'month';
+  if (activeTab === 'month') monthSelectedTitle = '__all__';
   tabButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.rankTab === activeTab));
   refreshFilterForActiveTab();
   setSearchPlaceholder();
@@ -832,12 +830,9 @@ tabButtons.forEach((btn) => {
 
 if (rankGameSelect) {
   rankGameSelect.addEventListener('change', () => {
+    if (activeTab !== 'game') return;
     const value = String(rankGameSelect.value || '__all__');
-    if (activeTab === 'month') {
-      monthSelectedTitle = value;
-    } else {
-      gameSelectedTitle = value;
-    }
+    gameSelectedTitle = value;
     render();
   });
 }

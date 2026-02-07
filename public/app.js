@@ -1795,6 +1795,44 @@ function goRank() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function applyInitialNavFromUrl() {
+  let nav = '';
+  try {
+    nav = String(new URLSearchParams(window.location.search).get('nav') || '').trim().toLowerCase();
+  } catch {
+    nav = '';
+  }
+  if (!nav) return;
+
+  if (nav === 'rank') {
+    window.location.href = '/rank.html';
+    return;
+  }
+  if (nav === 'task') {
+    window.location.href = '/tasks.html';
+    return;
+  }
+  if (nav === 'agent') {
+    setActiveNav('agent');
+    closeStore();
+    openAgents();
+    loadAgents();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  if (nav === 'store') {
+    setActiveNav('store');
+    closeAgents();
+    openStore();
+    loadStore();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  if (nav === 'home') {
+    goHome();
+  }
+}
+
 function renderList() {
   const term = searchInput.value.trim().toLowerCase();
   const base = games.filter((game) => {
@@ -1903,14 +1941,8 @@ tabButtons.forEach((btn) => {
 navButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const nav = btn.dataset.nav || 'home';
-    if (
-      (document.body.classList.contains('profile-open') || document.body.classList.contains('inventory-open')) &&
-      nav !== 'home' &&
-      nav !== 'task' &&
-      nav !== 'rank'
-    ) {
-      return;
-    }
+    closeProfile();
+    closeInventory();
     if (nav === 'home') {
       goHome();
       return;
@@ -1921,6 +1953,7 @@ navButtons.forEach((btn) => {
     }
     if (nav === 'agent') {
       setActiveNav('agent');
+      closeStore();
       openAgents();
       loadAgents();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2172,6 +2205,7 @@ document.addEventListener('keydown', (event) => {
 loadGames();
 loadProfileSummary();
 setSearchPlaceholder(getActiveContext());
+applyInitialNavFromUrl();
 if (siteTickerText) {
   siteTickerText.textContent = SITE_NOTICES[0];
   setInterval(rotateSiteNotice, 10_000);

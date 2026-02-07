@@ -344,7 +344,7 @@ body.profile-open .search input {
 .tasks-page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 18px 16px 56px;
+  padding: 18px 16px 120px;
 }
 
 .tasks-head {
@@ -2724,6 +2724,10 @@ body.modal-open .bottom-nav {
   pointer-events: none;
 }
 
+body.modal-open .bottom-nav {
+  pointer-events: auto;
+}
+
 .game-meta {
   color: var(--accent);
   font-size: 14px;
@@ -2769,6 +2773,7 @@ body.modal-open .bottom-nav {
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 70;
   display: flex;
   justify-content: center;
   gap: 12px;
@@ -2833,13 +2838,9 @@ body.modal-open .bottom-nav {
 
 @media (max-width: 760px) {
   .topbar {
-    display: grid;
-    grid-template-columns: 168px 1fr 40px;
-    grid-template-areas:
-      "spacer brand menu"
-      "search search search";
-    align-items: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
     border-radius: 20px;
     padding: 12px;
   }
@@ -2848,12 +2849,21 @@ body.modal-open .bottom-nav {
     display: none;
   }
 
-  .user-wrap {
-    grid-area: spacer;
-    justify-self: start;
-    max-width: 168px;
+  .brand {
     min-width: 0;
-    overflow: hidden;
+    flex: 0 0 auto;
+    align-items: flex-start;
+  }
+
+  .user-wrap {
+    order: 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
   }
 
   .pro5-text {
@@ -2863,6 +2873,7 @@ body.modal-open .bottom-nav {
   .pro5-btn {
     padding: 8px;
     min-width: 0;
+    max-width: 180px;
   }
 
   .pro5-label {
@@ -2883,8 +2894,7 @@ body.modal-open .bottom-nav {
     padding: 8px 10px;
     border-radius: 14px;
     min-width: 0;
-    max-width: 92px;
-    overflow: hidden;
+    max-width: 120px;
   }
 
   .balance-value {
@@ -2897,28 +2907,19 @@ body.modal-open .bottom-nav {
     display: none;
   }
 
-  .brand {
-    grid-area: brand;
-    min-width: 0;
-    justify-self: center;
-    align-items: center;
-    text-align: center;
-    overflow: hidden;
-  }
-
   .logo {
     text-align: center;
     font-size: 20px;
   }
 
   .search {
-    grid-area: search;
+    order: 4;
     width: 100%;
   }
 
   .menu-wrap {
-    grid-area: menu;
-    justify-self: end;
+    order: 3;
+    flex: 0 0 auto;
   }
 
   .profile-main {
@@ -2993,6 +2994,10 @@ body.modal-open .bottom-nav {
 
 @media (max-width: 420px) {
   .balance-pill {
+    display: none;
+  }
+
+  .pro5-name {
     display: none;
   }
 }
