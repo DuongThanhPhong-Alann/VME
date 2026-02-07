@@ -3003,10 +3003,19 @@ body.modal-open .bottom-nav {
 
 @media (max-width: 420px) {
   .balance-pill {
-    display: none;
+    max-width: 92px;
+    padding: 6px 8px;
+    border-radius: 12px;
   }
 
   .pro5-name {
+    max-width: 56px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 340px) {
+  .balance-pill {
     display: none;
   }
 }
