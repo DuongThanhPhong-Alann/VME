@@ -210,16 +210,16 @@ let profilePlayedGames = [];
 let agentSortMode = 'default'; // default | rating | name
 
 const SITE_NOTICES = [
-  'Chuc mung nam moi! Dang nhap moi ngay de nhan loc xuan.',
-  'Mua Tet ron rang! Nhiem vu hom nay thuong them Tien ngoc.',
-  'Mung Xuan phat tai! Moi ban be nhap ma moi de nhan qua.',
-  'Khong khi Tet da den! Diem danh lien tiep de nhan thuong lon.',
-  'Hoa dao hoa mai khoe sac! Choi game 30 phut nhan thuong ngay.',
-  'Dau xuan tranh tai! Top bang xep hang nhan qua tuan dac biet.',
-  'Cua hang Tet da mo! Nhieu vat pham gioi han dang cho ban.',
-  'Nam moi an khang! Dai ly ho tro nhanh suot mua le hoi.',
-  'San event Tet! Hoan thanh moc de mo ruong qua dau nam.',
-  'Tet vui an toan! Bao mat tai khoan de choi game on dinh.',
+  'Chúc mừng năm mới! Đăng nhập mỗi ngày để nhận lộc xuân.',
+  'Tết rộn ràng đã về! Hoàn thành nhiệm vụ để nhận quà may mắn.',
+  'Xuân sang phát tài! Mời bạn bè nhập mã để nhận thưởng hấp dẫn.',
+  'Không khí Tết ngập tràn! Điểm danh liên tiếp để mở quà đầu năm.',
+  'Hoa đào hoa mai khoe sắc! Chơi game 30 phút nhận thưởng ngay.',
+  'Đầu xuân tranh tài! Leo bảng xếp hạng để nhận quà đặc biệt.',
+  'Cửa hàng Tết đã mở! Nhiều vật phẩm giới hạn đang chờ bạn.',
+  'Năm mới an khang! Đại lý hỗ trợ nhanh suốt mùa lễ hội.',
+  'Săn sự kiện Tết! Hoàn thành mốc để mở rương quà đầu năm.',
+  'Chúc bạn Tết an vui! Bảo mật tài khoản để chơi game an toàn.',
 ];
 
 let siteNoticeIndex = 0;

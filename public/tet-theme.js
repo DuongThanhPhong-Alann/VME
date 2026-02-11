@@ -3,65 +3,47 @@
   if (!body || !body.classList.contains('tet-theme')) return;
   if (document.querySelector('.tet-scene')) return;
 
-  function createFlowerSvg(isDao) {
-    const ns = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', '0 0 64 64');
-    svg.setAttribute('class', 'tet-flower-svg');
-    svg.setAttribute('aria-hidden', 'true');
+  function mediaUrl(winPath) {
+    return `/media?path=${encodeURIComponent(winPath)}`;
+  }
 
-    const petalFill = isDao ? '#f38ab4' : '#ffd446';
-    const petalStroke = isDao ? '#cc4d82' : '#b77f09';
-    const coreFill = isDao ? '#ffe09b' : '#f48a00';
-    const coreDot = isDao ? '#d8962f' : '#b66800';
+  const PETAL_IMAGES = {
+    dao: {
+      primary: '/kaidao1.png?v=20260211',
+      fallback: mediaUrl('D:\\VME\\kaidao1.png'),
+    },
+    mai: {
+      primary: '/kaimai1.png?v=20260211',
+      fallback: mediaUrl('D:\\VME\\kaimai1.png'),
+    },
+  };
 
-    const petals = [
-      { cx: 32, cy: 15, rx: 10, ry: 13, rot: 0 },
-      { cx: 47, cy: 25, rx: 10, ry: 13, rot: 72 },
-      { cx: 41, cy: 43, rx: 10, ry: 13, rot: 144 },
-      { cx: 23, cy: 43, rx: 10, ry: 13, rot: 216 },
-      { cx: 17, cy: 25, rx: 10, ry: 13, rot: 288 },
-    ];
+  function createFlowerIcon(type) {
+    const icon = document.createElement('span');
+    icon.className = 'tet-flower-icon';
 
-    petals.forEach((p) => {
-      const el = document.createElementNS(ns, 'ellipse');
-      el.setAttribute('cx', String(p.cx));
-      el.setAttribute('cy', String(p.cy));
-      el.setAttribute('rx', String(p.rx));
-      el.setAttribute('ry', String(p.ry));
-      el.setAttribute('fill', petalFill);
-      el.setAttribute('stroke', petalStroke);
-      el.setAttribute('stroke-width', '2.2');
-      el.setAttribute('transform', `rotate(${p.rot} 32 32)`);
-      svg.appendChild(el);
-    });
-
-    const core = document.createElementNS(ns, 'circle');
-    core.setAttribute('cx', '32');
-    core.setAttribute('cy', '32');
-    core.setAttribute('r', '8');
-    core.setAttribute('fill', coreFill);
-    core.setAttribute('stroke', '#b66f0e');
-    core.setAttribute('stroke-width', '1.2');
-    svg.appendChild(core);
-
-    const dots = [
-      [32, 28],
-      [28, 31],
-      [36, 31],
-      [30, 35],
-      [34, 35],
-    ];
-    dots.forEach(([cx, cy]) => {
-      const dot = document.createElementNS(ns, 'circle');
-      dot.setAttribute('cx', String(cx));
-      dot.setAttribute('cy', String(cy));
-      dot.setAttribute('r', '1');
-      dot.setAttribute('fill', coreDot);
-      svg.appendChild(dot);
-    });
-
-    return svg;
+    const imageSet = PETAL_IMAGES[type] || PETAL_IMAGES.dao;
+    const img = document.createElement('img');
+    img.className = 'tet-flower-img';
+    img.alt = '';
+    img.setAttribute('aria-hidden', 'true');
+    img.decoding = 'async';
+    img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
+    img.src = imageSet.primary;
+    img.addEventListener(
+      'error',
+      () => {
+        if (img.dataset.retry === '1') {
+          icon.style.display = 'none';
+          return;
+        }
+        img.dataset.retry = '1';
+        img.src = imageSet.fallback;
+      },
+    );
+    icon.appendChild(img);
+    return icon;
   }
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -89,9 +71,9 @@
   body.prepend(scene);
 
   const viewport = Math.max(window.innerWidth || 0, 320);
-  const maxFlowers = prefersReducedMotion ? 10 : 18;
-  const minFlowers = prefersReducedMotion ? 6 : 11;
-  const flowerCount = Math.max(minFlowers, Math.min(maxFlowers, Math.round(viewport / 72)));
+  const maxFlowers = prefersReducedMotion ? 14 : 30;
+  const minFlowers = prefersReducedMotion ? 8 : 16;
+  const flowerCount = Math.max(minFlowers, Math.min(maxFlowers, Math.round(viewport / 52)));
 
   const maxEnvelopes = prefersReducedMotion ? 4 : 8;
   const minEnvelopes = prefersReducedMotion ? 2 : 4;
@@ -99,31 +81,39 @@
 
   for (let i = 0; i < flowerCount; i += 1) {
     const flower = document.createElement('span');
-    const isDao = Math.random() > 0.46;
-    flower.className = isDao ? 'tet-flower is-dao' : 'tet-flower is-mai';
+    const type = Math.random() > 0.5 ? 'dao' : 'mai';
+    flower.className = `tet-flower is-${type}`;
+    flower.appendChild(createFlowerIcon(type));
 
-    const icon = document.createElement('span');
-    icon.className = 'tet-flower-icon';
-    icon.appendChild(createFlowerSvg(isDao));
-    flower.appendChild(icon);
-
-    const size = Math.round(30 + Math.random() * 16);
-    const duration = prefersReducedMotion ? 18 + Math.random() * 8 : 11 + Math.random() * 13;
+    const size = Math.round(18 + Math.random() * 20);
+    const duration = prefersReducedMotion ? 20 + Math.random() * 8 : 12 + Math.random() * 14;
     const delay = -Math.random() * duration;
-    const opacity = 0.98 + Math.random() * 0.02;
-    const drift = -90 + Math.random() * 180;
-    const spin = (Math.random() > 0.5 ? 1 : -1) * (110 + Math.random() * 160);
+    const opacity = 0.74 + Math.random() * 0.24;
+    const drift = -170 + Math.random() * 340;
+    const curveA = drift * 0.24 + (-28 + Math.random() * 56);
+    const curveB = drift * 0.58 + (-38 + Math.random() * 76);
+    const curveC = drift * 0.84 + (-28 + Math.random() * 56);
+    const spin = (Math.random() > 0.5 ? 1 : -1) * (220 + Math.random() * 360);
+    const tilt = (Math.random() > 0.5 ? 1 : -1) * (4 + Math.random() * 14);
     const startX = Math.random() * 100;
-    const sway = 18 + Math.random() * 34;
+    const sway = 26 + Math.random() * 42;
+    const flutterDuration = 2.8 + Math.random() * 4.8;
+    const flutterAngle = (Math.random() > 0.5 ? 1 : -1) * (9 + Math.random() * 17);
 
     flower.style.setProperty('--start-x', `${startX}vw`);
     flower.style.setProperty('--size', `${size}px`);
     flower.style.setProperty('--duration', `${duration}s`);
     flower.style.setProperty('--delay', `${delay}s`);
     flower.style.setProperty('--drift', `${drift}px`);
+    flower.style.setProperty('--curve-a', `${curveA}px`);
+    flower.style.setProperty('--curve-b', `${curveB}px`);
+    flower.style.setProperty('--curve-c', `${curveC}px`);
     flower.style.setProperty('--spin', `${spin}deg`);
+    flower.style.setProperty('--tilt', `${tilt}deg`);
     flower.style.setProperty('--opacity', String(opacity));
     flower.style.setProperty('--sway', `${sway}px`);
+    flower.style.setProperty('--flutter-duration', `${flutterDuration}s`);
+    flower.style.setProperty('--flutter-angle', `${flutterAngle}deg`);
 
     flowers.appendChild(flower);
   }
