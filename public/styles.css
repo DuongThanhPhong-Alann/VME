@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;700&family=Paytone+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap');
 
 :root {
   --bg: #eef4ff;
@@ -10,8 +10,8 @@
   --line: #dbe6ff;
   --shadow: 0 18px 40px rgba(26, 42, 68, 0.14);
   --radius: 18px;
-  --font-body: "Lexend", "Segoe UI", sans-serif;
-  --font-display: "Paytone One", "Segoe UI", sans-serif;
+  --font-body: "Be Vietnam Pro", "Tahoma", sans-serif;
+  --font-display: "Playfair Display", "Times New Roman", serif;
 }
 
 * {
@@ -3159,5 +3159,387 @@ body.modal-open .bottom-nav {
     width: 38px;
     height: 38px;
     font-size: 14px;
+  }
+}
+
+/* Tet theme */
+.tet-theme {
+  --bg: #fff4ec;
+  --card: #fffdf7;
+  --text: #3f1c10;
+  --muted: #7a4b37;
+  --accent: #be1e2d;
+  --accent-2: #f2b544;
+  --line: #f2d4be;
+  --shadow: 0 18px 40px rgba(112, 24, 19, 0.18);
+}
+
+.tet-theme,
+.tet-theme.tasks-body,
+.tet-theme.profile-open {
+  background:
+    radial-gradient(circle at 8% 8%, rgba(255, 232, 198, 0.85) 0%, transparent 36%),
+    radial-gradient(circle at 88% 0%, rgba(255, 192, 203, 0.35) 0%, transparent 42%),
+    linear-gradient(180deg, #fff8f0 0%, #ffeede 54%, #ffe9d6 100%);
+}
+
+.tet-theme::before {
+  inset: -48% 0 auto 0;
+  height: 72vh;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(255, 189, 42, 0.36), transparent 60%),
+    radial-gradient(circle at 84% 10%, rgba(233, 82, 90, 0.24), transparent 60%),
+    radial-gradient(circle at 50% -12%, rgba(255, 235, 180, 0.58), transparent 58%);
+  z-index: 0;
+}
+
+.tet-theme .page,
+.tet-theme .tasks-page {
+  position: relative;
+  z-index: 2;
+}
+
+.tet-theme .topbar,
+.tet-theme .tasks-head,
+.tet-theme .rank-filter,
+.tet-theme .site-ticker {
+  background: rgba(255, 248, 236, 0.9);
+  border: 1px solid rgba(214, 90, 72, 0.2);
+  box-shadow: 0 12px 30px rgba(139, 30, 31, 0.16);
+}
+
+.tet-theme .logo,
+.tet-theme .tasks-head-title,
+.tet-theme .profile-title,
+.tet-theme .checkin-title,
+.tet-theme .store-title,
+.tet-theme .agent-title {
+  color: #9f1220;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.tet-theme .search,
+.tet-theme .pro5-btn,
+.tet-theme .menu-btn,
+.tet-theme .tasks-back,
+.tet-theme .tasks-home,
+.tet-theme .invite-copy {
+  background: rgba(255, 253, 247, 0.95);
+  border: 1px solid #f1d5bd;
+  color: var(--text);
+  box-shadow: 0 8px 20px rgba(122, 44, 31, 0.1);
+}
+
+.tet-theme .search-btn,
+.tet-theme .game-cta,
+.tet-theme .tasks-tab.active,
+.tet-theme .invite-submit,
+.tet-theme .linked-invite-copy,
+.tet-theme .chatbot-btn {
+  background: linear-gradient(135deg, #c9152a 0%, #e43a35 52%, #f2b23f 100%);
+  box-shadow: 0 10px 22px rgba(163, 31, 37, 0.28);
+}
+
+.tet-theme .tabs {
+  gap: 14px;
+}
+
+.tet-theme .tab {
+  color: #8a5a42;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.tet-theme .tab.active {
+  color: #a40e20;
+}
+
+.tet-theme .tab.active::after {
+  height: 4px;
+  background: linear-gradient(90deg, #ca1a2f, #f3b643);
+}
+
+.tet-theme .balance-pill {
+  border: 1px solid rgba(234, 150, 34, 0.42);
+  background: linear-gradient(135deg, rgba(255, 224, 166, 0.42), rgba(255, 248, 232, 0.92));
+  color: #7f2f03;
+}
+
+.tet-theme .menu-card {
+  background: rgba(255, 248, 236, 0.96);
+  border: 1px solid #f0d2bc;
+  box-shadow: 0 18px 36px rgba(110, 23, 28, 0.2);
+}
+
+.tet-theme .menu-icon {
+  color: #d98b1c;
+}
+
+.tet-theme .menu-group.open .menu-toggle,
+.tet-theme .menu-sub-item,
+.tet-theme .menu-group.open .menu-arrow,
+.tet-theme .game-meta {
+  color: #b61527;
+}
+
+.tet-theme .game-row,
+.tet-theme .tasks-card,
+.tet-theme .task-card,
+.tet-theme .linked-card,
+.tet-theme .checkin-card,
+.tet-theme .store-card,
+.tet-theme .agent-card,
+.tet-theme .profile-card {
+  border: 1px solid rgba(242, 212, 190, 0.92);
+  background: linear-gradient(180deg, rgba(255, 255, 251, 0.96), rgba(255, 248, 239, 0.96));
+  box-shadow: 0 14px 30px rgba(121, 33, 31, 0.08);
+}
+
+.tet-theme .rank-selected {
+  outline: 3px solid rgba(201, 24, 47, 0.24);
+  box-shadow: 0 18px 40px rgba(194, 29, 40, 0.16);
+}
+
+.tet-theme .linked-invite {
+  background: linear-gradient(135deg, rgba(249, 202, 125, 0.28), rgba(252, 230, 200, 0.65));
+  border-color: rgba(204, 77, 52, 0.22);
+}
+
+.tet-theme .linked-invite-code,
+.tet-theme .invite-code,
+.tet-theme .task-reward {
+  border-color: rgba(224, 149, 28, 0.4);
+  background: rgba(255, 242, 215, 0.8);
+}
+
+.tet-theme .bottom-nav {
+  background: rgba(255, 249, 240, 0.94);
+  border-top: 1px solid rgba(214, 90, 72, 0.2);
+}
+
+.tet-theme .nav-icon {
+  background: rgba(255, 224, 166, 0.34);
+  color: #b56d10;
+}
+
+.tet-theme .nav-item.active {
+  color: #b91526;
+}
+
+.tet-theme .nav-item.active .nav-icon {
+  background: linear-gradient(145deg, rgba(197, 21, 42, 0.16), rgba(242, 178, 63, 0.3));
+  color: #ae1020;
+}
+
+.tet-theme .site-ticker-text {
+  color: #9f1725;
+}
+
+.tet-scene {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.tet-flowers,
+.tet-envelopes {
+  position: absolute;
+  inset: 0;
+}
+
+.tet-flower {
+  position: absolute;
+  top: -12vh;
+  left: var(--start-x, 50vw);
+  width: var(--size, 30px);
+  height: var(--size, 30px);
+  opacity: var(--opacity, 1);
+  transform-origin: 50% 50%;
+  animation: tet-fall var(--duration, 12s) linear var(--delay, 0s) infinite;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.tet-flower-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.tet-flower-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  shape-rendering: geometricPrecision;
+}
+
+.tet-flower-icon svg * {
+  vector-effect: non-scaling-stroke;
+}
+
+.tet-envelope {
+  position: absolute;
+  top: -16vh;
+  left: var(--start-x, 50vw);
+  width: var(--env-w, 22px);
+  aspect-ratio: 3 / 2;
+  opacity: var(--opacity, 1);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 198, 126, 0.55);
+  background: linear-gradient(155deg, #e8343f 0%, #c31324 58%, #970f1f 100%);
+  box-shadow:
+    0 4px 8px rgba(106, 17, 20, 0.28),
+    inset 0 1px 0 rgba(255, 171, 171, 0.28);
+  transform-origin: 50% 50%;
+  animation: tet-envelope-fall var(--duration, 12s) linear var(--delay, 0s) infinite;
+}
+
+.tet-envelope::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 0, 100% 0, 50% 58%);
+  background: linear-gradient(180deg, rgba(255, 145, 145, 0.45), rgba(146, 9, 26, 0.55));
+}
+
+.tet-envelope::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 34%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #fff7c3 0%, #ffd96f 52%, #da8f16 100%);
+  border: 1px solid rgba(178, 104, 11, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 232, 167, 0.4);
+}
+
+.tet-lantern {
+  position: absolute;
+  top: -2px;
+  width: 64px;
+  height: 88px;
+  border-radius: 30px;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 217, 0.86) 0%, rgba(255, 226, 164, 0.18) 18%, rgba(190, 20, 39, 0.95) 100%);
+  border: 1px solid rgba(255, 215, 143, 0.55);
+  box-shadow:
+    0 16px 26px rgba(119, 24, 22, 0.3),
+    inset 0 -18px 24px rgba(255, 185, 93, 0.24);
+  transform-origin: top center;
+  animation: tet-lantern-sway 4.6s ease-in-out infinite;
+}
+
+.tet-lantern::before {
+  content: "";
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  width: 2px;
+  height: 30px;
+  margin-left: -1px;
+  background: rgba(187, 42, 34, 0.5);
+}
+
+.tet-lantern::after {
+  content: "";
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  width: 14px;
+  height: 18px;
+  margin-left: -7px;
+  border-radius: 3px 3px 9px 9px;
+  background: linear-gradient(180deg, #ffe39a 0%, #f0ad1d 100%);
+}
+
+.tet-lantern-left {
+  left: clamp(10px, 3vw, 30px);
+}
+
+.tet-lantern-right {
+  right: clamp(10px, 3vw, 30px);
+  animation-delay: -2.1s;
+}
+
+@keyframes tet-fall {
+  0% {
+    transform: translate(0, -14vh) rotate(0deg);
+    opacity: 0;
+  }
+  7% {
+    opacity: var(--opacity, 1);
+  }
+  34% {
+    transform: translate(calc(var(--drift, 0px) * 0.34 - var(--sway, 22px)), 34vh)
+      rotate(calc(var(--spin, 280deg) * 0.34));
+  }
+  68% {
+    transform: translate(calc(var(--drift, 0px) * 0.7 + var(--sway, 22px) * 0.7), 74vh)
+      rotate(calc(var(--spin, 280deg) * 0.7));
+  }
+  96% {
+    opacity: var(--opacity, 1);
+  }
+  100% {
+    transform: translate(var(--drift, 0px), 112vh) rotate(var(--spin, 280deg));
+    opacity: 0;
+  }
+}
+
+@keyframes tet-envelope-fall {
+  0% {
+    transform: translate(0, -16vh) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--opacity, 1);
+  }
+  42% {
+    transform: translate(calc(var(--drift, 0px) * 0.44 + var(--sway, 22px)), 44vh)
+      rotate(calc(var(--spin, 140deg) * 0.5));
+  }
+  72% {
+    transform: translate(calc(var(--drift, 0px) * 0.72 - var(--sway, 22px) * 0.62), 78vh)
+      rotate(calc(var(--spin, 140deg) * 0.82));
+  }
+  96% {
+    opacity: var(--opacity, 1);
+  }
+  100% {
+    transform: translate(var(--drift, 0px), 114vh) rotate(var(--spin, 140deg));
+    opacity: 0;
+  }
+}
+
+@keyframes tet-lantern-sway {
+  0%,
+  100% {
+    transform: rotate(3deg);
+  }
+  50% {
+    transform: rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tet-flower,
+  .tet-envelope,
+  .tet-lantern {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .tet-lantern {
+    width: 52px;
+    height: 72px;
   }
 }
